@@ -786,6 +786,25 @@ button,a,.sheet,.topbar,.dir,.picker{touch-action:manipulation}
 .chip{min-height:34px;padding:0 11px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}
 .group{margin:16px 0 2px;font-size:14px;color:var(--muted);font-weight:650}
 .note{font-size:12.5px;color:var(--muted);margin:12px 0 6px;line-height:1.45}
+/* opening hours (evaluated for when you would arrive), price level and late-night badges */
+.pills{display:flex;flex-wrap:wrap;gap:4px 6px;margin:6px 0 0}
+.pills:empty{display:none}
+.oh,.badge{display:inline-block;font-size:12.5px;font-weight:700;line-height:1.35;padding:2px 8px;border-radius:999px;background:var(--panel-2)}
+.oh[data-s=open],.oh[data-s=always]{color:var(--jade)}
+.oh[data-s=soon]{color:var(--gold-text,var(--gold))}
+.oh[data-s=closed]{color:var(--bad)}
+.badge{font-weight:650;color:var(--muted)}
+.badge.late,.badge.skip{color:var(--ink)}
+.badge.unv{color:var(--bad)}
+.hrs,.ptxt{margin:5px 0 0;font-size:12.5px;line-height:1.4;color:var(--muted)}
+.meta .oh{align-self:center;font-size:12px;padding:1px 7px;border-radius:9px}
+.meta>span:empty{display:none}/* no stray column gap (and indented pill) when there is no distance or direction yet */
+/* with the list open the rows carry the pills and the full Chinese names, so the next card keeps to its WP1 height (A2) */
+.sheet.list-open #nextOh{display:none}
+.sheet.list-open #nextZh{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hint.warn{color:var(--ink);display:flex;align-items:center;gap:10px}
+.hint.warn>span{flex:1 1 auto;min-width:0}
+.hint .chip{flex:none}
 
 /* map markers */
 .pin-wrap{background:none;border:0}
@@ -807,12 +826,21 @@ path.acc{fill:var(--me);fill-opacity:.12;stroke:var(--me);stroke-opacity:.4;stro
 .leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
 .pop strong{font-size:15.5px}
 .pop p{margin:6px 0;color:var(--muted);font-size:13px}
+.pop .pills{margin:6px 0 2px}
 .pop .pop-d{font-weight:700;margin:6px 0 8px;font-variant-numeric:tabular-nums}
-/* when Leaflet caps the popup height (short phones), only the blurb scrolls: name, distance and the chips stay visible */
+/* when Leaflet caps the popup height (short phones), only the body (hours, blurb) scrolls: name, pills, distance and the chips stay visible (fitPop) */
 .leaflet-popup-content.leaflet-popup-scrolled{overflow:hidden}
 .leaflet-popup-scrolled .pop{height:100%;display:flex;flex-direction:column}
 .leaflet-popup-scrolled .pop>*{flex:none}
-.leaflet-popup-scrolled .pop>p{flex:0 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding-bottom:12px;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 14px),transparent)}
+.leaflet-popup-scrolled .pop>.pop-body{flex:0 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding-bottom:12px;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 14px),transparent)}
+.pop .ptxt,.pop-x .pop-d,.pop-nb .pop-body{display:none}
+.pop-c .pills .ptx,.pop-c .pills .late.red,.pop-p .pills>.price,.pop-p .pills>.late{display:none}
+.pop-c .pop .pills{gap:4px}
+.pop-c .pop .pills>*{padding:2px 6px}
+.pop-c .pop .ptxt{display:block;margin-top:2px}
+.pop-t .pop>strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:8px}
+.pop-t .pop .pills{margin:4px 0 0}
+.pop-t .pop .pop-d{margin:4px 0 6px}
 
 /* driver card */
 .overlay{position:fixed;inset:0;z-index:2000;background:rgba(5,8,16,.75);display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 20px) 18px calc(env(safe-area-inset-bottom,0px) + 20px)}
@@ -935,7 +963,7 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
     <div style="min-width:0">
       <div class="next-title"><span class="num" id="nextNum">1</span><h2 id="nextName">Tianxin Pavilion</h2></div>
       <div class="zh" id="nextZh">天心阁</div>
-      <div class="meta"><b id="nextDist">–</b><span id="nextTime"></span><span id="nextDir"></span></div>
+      <div class="meta"><b id="nextDist">–</b><span id="nextTime"></span><span id="nextDir"></span><span class="oh" id="nextOh" hidden></span></div>
     </div>
     <div class="next-acts">
       <button class="btn small" data-act="visit" id="nextDone">Done</button>
@@ -1011,53 +1039,427 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
 var $=function(s){return document.querySelector(s)};
 var RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-/* ---------- places (GCJ-02, the datum Chinese maps use) ---------- */
-var DAYS={
- today:{label:'Hotel loop',key:'changsha-night-walk-v1',base:{id:'hotel',n:'H',name:'Wyndham Grand Plaza Royale Furongguo',zh:'长沙芙蓉国温德姆至尊豪廷大酒店',lat:28.1865751,lng:112.9860048,tel:'+86 731 8868 8888',short:'Hotel',back:'Back to the hotel',blurb:'Your hotel, the start and end of the loop.'},eats:[],stops:[
- {id:'tianxin',n:1,name:'Tianxin Pavilion',zh:'天心阁',lat:28.183687,lng:112.981369,blurb:'A pavilion on the last surviving stretch of the old city wall, lit up at night. The park around it is free. The paid wall-and-pavilion area has an evening session (Tue–Sun about 18:00–22:00, last entry 21:30); night tickets cost more than day ones (about ¥58).'},
- {id:'huangxing',n:2,name:'Huangxing Walking Street',zh:'黄兴南路步行街',lat:28.186413,lng:112.976319,blurb:'The main neon pedestrian strip. Grab a Chayan Yuese (茶颜悦色) tea, or black stinky tofu if you still have room.'},
- {id:'dufu',n:3,name:'Du Fu Riverside Pavilion',zh:'杜甫江阁',lat:28.185192,lng:112.968851,blurb:'Golden pavilion on the Xiang River, facing Orange Isle. Entry is a small fee checked by ID, so bring your passport. The riverside path is free. Floodlit about 19:00–22:30; the pavilion itself is open until 22:00.'},
- {id:'wenheyou',n:4,name:'Super Wenheyou',zh:'超级文和友（海信广场）',lat:28.189043,lng:112.969744,blurb:'Retro 1980s Changsha food complex inside Hisense Plaza (海信广场), open until late (about 2–3am). Free to wander; table queues can be long.'},
- {id:'ifs',n:5,name:'Changsha IFS',zh:'长沙国金中心 IFS',lat:28.191892,lng:112.97693,blurb:'Upscale mall with giant art-toy sculptures on the rooftop. Malls here usually close around 10pm, so go earlier if it matters to you.'},
- {id:'jiefang',n:6,name:'Jiefang West Road',zh:'解放西路',lat:28.191095,lng:112.981611,blurb:'Changsha’s bar street. It gets busy late, so it works as the last stop before the hotel.'}
-],extras:[
- {id:'pozi',n:'+',opt:true,name:'Pozi Street',zh:'坡子街',lat:28.189685,lng:112.974006,blurb:'Snack street between Huangxing Road and the river, home of Huogongdian (火宫殿), the old-school stinky tofu institution.'},
- {id:'taiping',n:'+',opt:true,name:'Taiping Old Street',zh:'太平老街',lat:28.19515,lng:112.97181,blurb:'Restored old lane with snack stalls and small shops, a short detour north of the loop.'}
-]},
- tomorrow:{label:'Huangxing Rd',key:'changsha-night-walk-v1-tomorrow',
-  base:{id:'hotel',n:'★',name:'Huangxing Road Pedestrian Street',zh:'黄兴南路步行街',lat:28.186413,lng:112.976319,short:'Base',back:'Back to Huangxing Rd',blurb:'Your base: the main pedestrian shopping street. The loop starts and ends here.'},
-  stops:[
- {id:'hx-nanmen',n:1,name:'Nanmenkou (old South Gate)',zh:'南门口',lat:28.182875,lng:112.976225,blurb:'The south end of the street, where the old south city gate stood. In the evening the snack stalls along Xihu Road (西湖路) sell sugar-oil baba (糖油粑粑), stinky tofu and skewers. The Huang Xing statue is at the other end, by IFS.'},
- {id:'hx-tianxin',n:2,name:'Tianxin Pavilion',zh:'天心阁',lat:28.183687,lng:112.981369,blurb:'A pavilion on the last surviving stretch of the old city wall, lit up at night, in a free park. The paid wall-and-pavilion area has an evening session (Tue–Sun about 18:00–22:00, last entry 21:30; night tickets about ¥58) and the best view back over the old town.'},
- {id:'hx-hualong',n:3,name:'Hualongchi & Baiguoyuan lanes',zh:'化龙池 白果园',lat:28.187328,lng:112.977246,blurb:'Narrow old lanes just east of the main street, with small bars, cafés and old stone-framed houses.'},
- {id:'hx-ifs',n:4,name:'Changsha IFS rooftop',zh:'长沙国金中心 IFS',lat:28.191892,lng:112.97693,blurb:'Upscale mall at the north end of the street. The bronze Huang Xing statue, honouring the revolutionary the road is named after, stands at the street’s north entrance right beside it, a classic meeting point. Take the lifts to the L7 rooftop garden for the giant KAWS sculptures. The mall closes at 22:00, so get there by about 21:30.'},
- {id:'hx-jiayi',n:5,name:'Taiping Old Street',zh:'太平街 贾谊故居',lat:28.193616,lng:112.971787,blurb:'Restored lane of grey-brick shops and snack stalls, lively until late. Jia Yi’s Former Residence (No. 28, near the south end) is a daytime-only museum and has been reported closed for renovation since May 2025, so expect to see it from outside.'},
- {id:'hx-dufu',n:6,name:'Du Fu Riverside Pavilion',zh:'杜甫江阁',lat:28.185192,lng:112.968851,blurb:'Golden pavilion on the Xiang River, facing Orange Isle. The riverside path is free and good at sunset; the pavilion itself has a small fee checked by ID, so bring your passport. Floodlit about 19:00–22:30; the pavilion itself is open until 22:00.'},
- {id:'hx-wenmiao',n:7,name:'Xiwenmiaoping',zh:'西文庙坪',lat:28.184732,lng:112.971991,blurb:'A quiet old neighbourhood with a stone memorial archway left over from the city’s old Confucian school. A short step into pre-mall Changsha on the way back to the main street.'}
-  ],
-  extras:[
- {id:'hx-jiandu',n:'+',opt:true,name:'Changsha Bamboo Slips Museum',zh:'长沙简牍博物馆',lat:28.184904,lng:112.983172,blurb:'Free museum of ancient bamboo writing slips dug up in central Changsha, next to Tianxin Pavilion. Open 9:00–17:00 (last entry 16:30), closed Tuesdays; book on the museum’s WeChat account and bring your passport. Daytime only.'},
- {id:'hx-chaozong',n:'+',opt:true,name:'Chaozong Street',zh:'潮宗街',lat:28.203101,lng:112.973612,blurb:'Granite-paved historic street about 20 minutes’ walk north, lined with cafés and restored old buildings. Quieter than Taiping Street.'},
- {id:'hx-juzizhou',n:'+',opt:true,name:'Orange Isle',zh:'橘子洲',lat:28.195153,lng:112.962324,blurb:'Long island in the Xiang River. Free, but you must reserve first on the WeChat account 岳麓山橘子洲旅游区 (passport holders can also use the manual lane at the gate); walk-ups are turned away on holidays. Open 07:00–22:00. The pin is Juzizhou metro (Line 2); the giant Young Mao head is about 3 km south at the island’s tip, and sightseeing trains run the length of it.'}
-  ],
-  eats:[
- {id:'eat-huogong',n:'🍜',opt:true,eat:true,name:'Huogongdian (Pozi Street)',zh:'火宫殿（坡子街总店）',lat:28.190048,lng:112.973951,blurb:'Changsha’s best-known old restaurant, on Pozi Street. Order a spread of small local snacks: stinky tofu, sugar-oil baba (糖油粑粑) and steamed dishes. The pin marks Pozi Street; the restaurant is along it.'},
- {id:'eat-feidachu',n:'🍜',opt:true,eat:true,name:'Fei Da Chu',zh:'费大厨辣椒炒肉（坡子街店）',lat:28.190093,lng:112.973184,blurb:'Popular Hunan chain famous for one dish, chili-fried pork (辣椒炒肉), with rice. Queues at meal times; take a number and wander Pozi Street meanwhile.'},
- {id:'eat-wenheyou',n:'🍜',opt:true,eat:true,name:'Super Wenheyou',zh:'超级文和友（海信广场）',lat:28.189043,lng:112.969744,blurb:'Retro 1980s Changsha food complex inside Hisense Plaza (海信广场), near the river, open until late (about 2–3am). Crayfish, stinky tofu and dozens of stalls; free to wander, table queues can be long.'},
- {id:'eat-chayan',n:'🧋',opt:true,eat:true,name:'Chayan Yuese',zh:'茶颜悦色（黄兴路步行街）',lat:28.183778,lng:112.976509,blurb:'Changsha’s famous milk-tea chain, only found around here. There are branches every few hundred metres; this one is near the south end of the street.'}
-  ]}
+/* ---------- places: one registry (GCJ-02, the datum Chinese maps use) ----------
+   Adding a researched place is a data-only edit: paste the object into PLACES. Research field names
+   (name_en, name_zh, lat_gcj, lng_gcj, category, address_zh, late_night, sources, confidence) are accepted as they are,
+   and prose "hours" that don't parse become hoursText. Ids are the keys of saved progress: never rename or reuse one.
+   New ids are kebab-case with a p- prefix. Facts below were checked in Sep 2026 (checked:'2026-09'). */
+var CATS={          // one row per category; add a row to add a category. eat: grouping only ("Eat & drink", "More nearby")
+  sight:     {en:'Sight',      glyph:'◆', eat:false},
+  food:      {en:'Food',       glyph:'🍜', eat:true },
+  snack:     {en:'Snack',      glyph:'🍢', eat:true },
+  drink:     {en:'Drink',      glyph:'☕', eat:true },   // not 🧋: that needs Emoji 13 (Android 11+)
+  nightlife: {en:'Nightlife',  glyph:'🍸', eat:true },
+  shopping:  {en:'Shopping',   glyph:'🛍', eat:false},
+  experience:{en:'Experience', glyph:'🎡', eat:false},
+  transport: {en:'Metro',      glyph:'M',  eat:false},  // for a metro station, "last" is the last train
+  health:    {en:'Hospital',   glyph:'✚',  eat:false},
+  hotel:     {en:'Hotel',      glyph:'H',  eat:false}
 };
-/* the real hotel on every walk (taxi card, Hotel button, H pin); never in ALL, so no auto-tick and no list row */
-var HOME=Object.assign({},DAYS.today.base,{id:'home',blurb:'Your hotel, about 1 km east of Huangxing Road. Show the Driver card to a taxi driver to get back.'});
-var DAY_KEY='changsha-walk-day';
-var DAY=(function(){try{var d=localStorage.getItem(DAY_KEY);return DAYS[d]?d:'today'}catch(e){return 'today'}})();
-var HOTEL=DAYS[DAY].base,STOPS=DAYS[DAY].stops,EXTRAS=DAYS[DAY].extras,EATS=DAYS[DAY].eats||[];
-var ALL=STOPS.concat(EXTRAS,EATS);
-var BY={};ALL.concat([HOTEL]).forEach(function(s){BY[s.id]=s});
-BY.home=HOME;
-/* everything with a pin: on the Huangxing Rd walk the hotel gets its own H pin */
-var PINNED=ALL.concat([HOTEL],DAY!=='today'?[HOME]:[]);
-function isBase(s){return s===HOTEL||s===HOME}
+/* Field guide (spec §3.3): hours = machine-readable, e.g. 'Mo-Su 10:00-22:00' or 'Tu off; Mo,We-Su 09:00-17:00' (drives the
+   open/closed pill); last = last entry "HH:MM", or one per session as a list (['18:00','21:30']): each applies to the range it
+   falls inside, and if two fall inside one range the later counts; hoursFor = what the hours cover when the place itself stays worth visiting
+   (e.g. 'Inside'); hoursText = prose, shown as is, no pill; price = {lvl:0-4,text}; late = usually open until 23:00+;
+   conf:'low' = "Unverified" badge and no pill. Streets and lanes get no hours, only late:true and a hoursText line. */
+var PLACES=[
+ /* ---- the hotel and the two walk bases ---- */
+ {id:'hotel',cat:'hotel',name:'Wyndham Grand Plaza Royale Furongguo',short:'Hotel',zh:'长沙芙蓉国温德姆至尊豪廷大酒店',
+  addr:'长沙市芙蓉区芙蓉中路二段106号'/* from a hotel listing: verify at check-in */,tel:'+86 731 8868 8888',lat:28.1865751,lng:112.9860048,
+  back:'Back to the hotel',blurb:'Your hotel, the start and end of the loop.'},
+ {id:'hx-base',cat:'sight',glyph:'★',name:'Huangxing Road Pedestrian Street',short:'Base',zh:'黄兴南路步行街',lat:28.186413,lng:112.976319,
+  hoursText:'Street open all night; most shops about 10:00–22:00',price:{lvl:0,text:'Free'},late:true,back:'Back to Huangxing Rd',
+  taxi:{zh:'黄兴广场（黄兴路步行街）',lat:28.189001,lng:112.976361},conf:'high',checked:'2026-09',
+  blurb:'Your base: Changsha’s main neon pedestrian street, about 840 m long. The Huang Xing statue marks the north end at Simenkou, across Jiefang W Rd from IFS; Nanmenkou is the south end. The pin is in the southern third. The street is free and busy until late; most shops close around 22:00.'},
+
+ /* ---- walk stops and detours ---- */
+ {id:'tianxin',cat:'sight',name:'Tianxin Pavilion',zh:'天心阁',lat:28.183687,lng:112.981369,addr:'长沙市天心区天心路17号',
+  /* no machine hours: the paid area runs 18:00–22:00 in winter but 18:30–22:30 in summer and the switch date isn't published,
+     while the park (the reason to come at night) stays open until midnight */
+  hoursText:'Park free until midnight. Paid wall and pavilion: Tue–Sun evenings, 18:00–22:00 (last entry 21:30) in winter or 18:30–22:30 (last entry 22:00) in summer; closed Monday evenings.',
+  price:{lvl:2,text:'Park free · night ticket ~¥58'},conf:'medium',checked:'2026-09',
+  blurb:'Pavilion on the last surviving stretch of Changsha’s old city wall, lit up at night. The park around it is free until midnight. The wall top and pavilion need a night ticket (about ¥58): Tue–Sun about 18:00–22:00 with last entry 21:30, or 18:30–22:30 in summer with last entry 22:00. The paid area is closed on Monday evenings.'},
+ {id:'hx-tianxin',ref:'tianxin',
+  blurb:'Pavilion on the last surviving stretch of the old city wall, lit up at night, in a park that is free until midnight. The wall top and pavilion need a night ticket (about ¥58): Tue–Sun about 18:00–22:00 with last entry 21:30, or 18:30–22:30 in summer with last entry 22:00. The wall has the best view back over the old town.'},
+ {id:'huangxing',cat:'sight',name:'Huangxing Walking Street',zh:'黄兴南路步行街',lat:28.186413,lng:112.976319,
+  hoursText:'Street open all night; most shops about 10:00–22:00',price:{lvl:0,text:'Free'},late:true,conf:'high',checked:'2026-09',
+  blurb:'The main neon pedestrian strip. Grab a Chayan Yuese (茶颜悦色) tea, or black stinky tofu if you still have room.'},
+ {id:'dufu',cat:'sight',name:'Du Fu Riverside Pavilion',short:'Du Fu Pavilion',zh:'杜甫江阁',lat:28.185192,lng:112.968851,addr:'长沙市天心区湘江中路二段',
+  /* day session 9:00-18:30 (last entry 18:00); Tue-Sun the 喜相逢 night show 19:00-22:00 (last entry 21:30); Mondays 9:00-22:00, last entry 21:30,
+     and no Monday night show "except on public holidays" (river-cruise re-check: Bendibao, pavilion notice), so a holiday Monday runs like Tue-Sun */
+  hours:'Mo 09:00-22:00; Tu-Su,PH 09:00-18:30,19:00-22:00',last:['18:00','21:30'],hoursFor:'Inside',
+  price:{lvl:1,text:'Riverside free · inside ¥18 by day, night show ~¥58'},note:'Floodlit about 19:00–22:30 (earlier in winter).',conf:'high',checked:'2026-09',
+  blurb:'Tang-style pavilion (18 m, 2005) facing Orange Isle; the riverside path is free. Lit about 19:00–22:30 (earlier in winter). Entry ¥18 by day (9:00–18:30, last entry 18:00). Tue–Sun evenings the interior is the 喜相逢 night show (about ¥58, 19:00–22:00, last entry 21:30). Bring your passport.'},
+ {id:'hx-dufu',ref:'dufu'},
+ {id:'wenheyou',cat:'food',name:'Super Wenheyou',short:'Wenheyou',zh:'长沙文和友（海信广场店）',lat:28.189043,lng:112.969744,addr:'长沙市天心区湘江中路二段36号海信广场',
+  hours:'Mo-Su 11:00-03:00',price:{lvl:3,text:'~¥90–130 per person'},late:true,conf:'high',checked:'2026-09',
+  order:[{zh:'口味虾',py:'kǒuwèi xiā',en:'Spicy crayfish'},{zh:'臭豆腐',py:'chòu dòufu',en:'Black stinky tofu'},{zh:'猪油拌饭',py:'zhūyóu bànfàn',en:'Pork-lard rice'}],
+  orderTip:'Food stalls are on floors 1–4.',tags:['crayfish','stinky tofu','food court'],
+  blurb:'Retro 1980s Changsha food complex in Hisense Plaza (海信广场) by the river, open about 11:00–03:00. Floors 1–4 have crayfish, stinky tofu, pork-lard rice and many snack stalls; floors 5–6 are now mostly empty. Free to wander. Around ¥90–130 per person, with queues at the evening peak.'},
+ {id:'eat-wenheyou',ref:'wenheyou'},
+ {id:'ifs',cat:'shopping',name:'Changsha IFS',short:'Changsha IFS',zh:'长沙IFS国金中心',lat:28.191892,lng:112.97693,addr:'长沙市芙蓉区解放西路188号',
+  hours:'Mo-Su 10:00-22:00',price:{lvl:0,text:'Free'},conf:'high',checked:'2026-09',tags:['kaws','mall','rooftop'],
+  blurb:'Upscale mall at the pedestrian street’s north end, across Jiefang West Rd from the Huang Xing statue. Take a lift to the L7 open-air sculpture garden to see KAWS’s 8 m bronze SEEING/WATCHING, two figures back to back. Free. The mall is open 10:00–22:00, so arrive by about 21:30.'},
+ {id:'hx-ifs',ref:'ifs',name:'Changsha IFS rooftop'},
+ {id:'jiefang',cat:'nightlife',name:'Jiefang West Road',zh:'解放西路',lat:28.191095,lng:112.981611,
+  hoursText:'Street open all night; the bars get busy late',late:true,
+  blurb:'Changsha’s bar street. It gets busy late, so it works as the last stop before the hotel.'},
+ {id:'pozi',cat:'snack',name:'Pozi Street',zh:'坡子街',lat:28.189685,lng:112.974006,
+  hoursText:'Street open all night; shop and restaurant hours vary',price:{lvl:1},late:true,
+  blurb:'Snack street between Huangxing Road and the river, home of Huogongdian (火宫殿), the old-school stinky tofu institution.'},
+ {id:'taiping',cat:'sight',name:'Taiping Old Street',zh:'太平老街',lat:28.19515,lng:112.97181,
+  hoursText:'Street open all day; many shops open late',price:{lvl:0,text:'Free'},late:true,conf:'medium',checked:'2026-09',
+  blurb:'Restored old lane of grey-brick shops and snack stalls, a short detour north of the loop. Jia Yi’s Former Residence (贾谊故居, No. 28, near the Jiefang W Rd end) has been closed for renovation since May 2025.'},
+ {id:'hx-nanmen',cat:'sight',name:'Nanmenkou (old South Gate)',zh:'南门口',lat:28.183664,lng:112.97617,
+  hoursText:'Snack shops keep their own hours; busiest about 17:00–01:00',price:{lvl:1,text:'Snacks about ¥5–20'},late:true,conf:'high',checked:'2026-09',
+  blurb:'South end of the street, where the old south gate stood until 1922. The lanes around this junction (Xihu Rd 西湖路, Xueyuan St 学院街) are full of small snack shops: sugar-oil baba (糖油粑粑), stinky tofu, fried skewers, about ¥5–20. Busiest roughly 17:00–01:00. The Huang Xing statue is at the other end, by IFS.'},
+ {id:'hx-hualong',cat:'nightlife',name:'Hualongchi & Baiguoyuan lanes',zh:'化龙池 白果园',lat:28.187328,lng:112.977246,
+  hoursText:'Lanes always open; bars get busy after 21:00 and many stay open past midnight',price:{lvl:3,text:'Bars about ¥50–200 per person'},late:true,conf:'high',checked:'2026-09',
+  blurb:'Granite-paved (麻石) old lane just east of the main street. About a dozen small live-music bars remain; they get busy after 9pm and many stay open past midnight. Cross Renmin W Rd north to Baiguoyuan (白果园) to see the grey-brick Cheng Qian mansion (程潜公馆) from outside; its museum opens Tue–Sun 9:00–17:00.'},
+ {id:'hx-jiayi',cat:'sight',name:'Taiping Old Street',zh:'太平老街',lat:28.193616,lng:112.971787,
+  hoursText:'Street open all day; many shops open late',price:{lvl:0,text:'Free'},late:true,conf:'medium',checked:'2026-09',
+  blurb:'Restored 380 m lane of grey-brick shops and snack stalls. Free, open all day, liveliest in the evening, and many shops stay open late. Jia Yi’s Former Residence (贾谊故居, No. 28, near the Jiefang W Rd end) has been closed for renovation since May 2025, so expect to see it from outside.'},
+ {id:'hx-wenmiao',cat:'sight',name:'Xiwenmiaoping archway',zh:'西文庙坪牌坊',lat:28.184874,lng:112.97183,
+  hoursText:'Open residential lane, no gate',price:{lvl:0,text:'Free'},conf:'high',checked:'2026-09',
+  blurb:'Granite archway, about 9 m tall, built in 1866 and carved 道冠古今 (front) and 贤关 (back): the only structure of Changsha’s old Prefectural School to survive the 1938 fire, because houses hemmed it in (they were cleared in 2004). In a quiet residential lane on the way back to the main street; free, no gate.'},
+ {id:'hx-jiandu',cat:'sight',name:'Changsha Bamboo Slips Museum',zh:'长沙简牍博物馆',lat:28.184904,lng:112.983172,addr:'长沙市天心区白沙路92号',
+  /* museum notice of 24 Sep 2026: open over National Day (Tue 6 Oct included), closed Thu 8 Oct 2026 in lieu */
+  hours:'Tu off; Mo,We-Su,PH 09:00-17:00; 2026-10-08 off',last:'16:30',price:{lvl:0,text:'Free · book ahead'},conf:'high',checked:'2026-09',
+  hoursText:'Open on public-holiday Tuesdays (Tue 6 Oct 2026) and closed Thu 8 Oct 2026 in lieu. Also closed on Chinese New Year’s Eve and the first two days of the New Year.',
+  blurb:'Free museum of the Zoumalou bamboo and wooden slips, ancient writing dug up in central Changsha, a short walk from Tianxin Pavilion. Open 9:00–17:00 (last entry 16:30), closed Tuesdays, so daytime only. Book free through the museum’s WeChat account and bring your passport.'},
+ {id:'hx-chaozong',cat:'sight',name:'Chaozong Street',zh:'潮宗街',lat:28.203101,lng:112.973612,
+  hoursText:'Street always open; some cafés and bars stay open late',price:{lvl:0,text:'Free'},late:true,conf:'high',checked:'2026-09',
+  blurb:'Old granite-paved street, one of Changsha’s last few, still on its Qing-era layout. The side lane Jiuruli (九如里) has red-brick Republican-era mansions. There are cafés, small bars and design shops, and some stay open late. Calmer than Taiping Street. Free and always open. About 25 minutes’ walk north; enter from Huangxing N Rd.'},
+ {id:'hx-juzizhou',cat:'sight',name:'Orange Isle',zh:'橘子洲',lat:28.195153,lng:112.962324,
+  hours:'Mo-Su 07:00-22:00',last:'21:00',price:{lvl:0,text:'Free · reservation required'},conf:'medium',checked:'2026-09',
+  blurb:'Long island in the Xiang River. Free, but you must reserve first: book real-name on the WeChat account 岳麓山橘子洲旅游区 (passport accepted) or register your passport at the manual lane at the entrance; walk-ups may be turned away on holidays. Open 07:00–22:00, last entry about 21:00. The pin is Juzizhou metro (Line 2); the giant Young Mao head is about 3 km south, and the island train is ¥40 return. No fireworks since mid-2023.'},
+
+ /* ---- places to eat on the Huangxing Rd walk ---- */
+ {id:'eat-huogong',cat:'food',name:'Huogongdian (Pozi Street)',short:'Huogongdian',zh:'火宫殿（坡子街总店）',lat:28.190186,lng:112.973853,
+  addr:'长沙市天心区坡子街127号',tel:'+86 731 8581 4228',
+  hoursText:'About 08:00–22:00 (2025 listing; others claim later). Arrive by about 21:30.',price:{lvl:2,text:'~¥55–65 per person'},conf:'high',checked:'2026-09',
+  order:[{zh:'臭豆腐',py:'chòu dòufu',en:'Black stinky tofu'},{zh:'糖油粑粑',py:'táng yóu bāba',en:'Sugar-oil rice cakes'},
+         {zh:'姊妹团子',py:'zǐmèi tuánzi',en:'Sister rice dumplings'},{zh:'毛氏红烧肉',py:'Máo shì hóngshāo ròu',en:'Mao-style red-braised pork'}],
+  orderTip:'Pick dishes at the open counters.',tags:['stinky tofu','snacks','sugar-oil baba'],
+  blurb:'Changsha’s best-known old snack restaurant, on Pozi Street. Pick dishes from open counters: black stinky tofu (臭豆腐), sugar-oil baba (糖油粑粑), sister dumplings (姊妹团子), Mao-style braised pork (毛氏红烧肉). About ¥55–65 per person. Roughly 8:00–22:00. Touristy and crowded at peak times.'},
+ {id:'eat-feidachu',cat:'food',name:'Fei Da Chu',zh:'费大厨辣椒炒肉（坡子街店）',lat:28.190093,lng:112.973184,
+  addr:'长沙市天心区坡子街69号（火宫殿斜对面）',tel:'+86 731 8507 1977',
+  hoursText:'Listed hours differ: 11:00–21:30 (some days with a 16:00–17:30 break) or 10:30–midnight. Arrive by about 21:00 to be safe.',
+  price:{lvl:2,text:'~¥60–80 per person'},conf:'medium',checked:'2026-09',
+  order:[{zh:'辣椒炒肉',py:'làjiāo chǎoròu',en:'Chili-fried pork (the signature)'},{zh:'皮蛋青椒擂茄子',py:'pídàn qīngjiāo léi qiézi',en:'Pounded eggplant with century egg and green chili'},
+         {zh:'香芋蒸排骨',py:'xiāngyù zhēng páigǔ',en:'Steamed taro spare ribs'},{zh:'米饭',py:'mǐfàn',en:'Rice'}],
+  orderTip:'Expect a queue at meal times: take a number and wander Pozi Street.',tags:['chili pork','hunan'],
+  blurb:'Hunan chain famous for one dish, chili-fried pork (辣椒炒肉), eaten with rice; pounded eggplant with century egg (皮蛋青椒擂茄子) and steamed taro spare ribs (香芋蒸排骨) are also popular. About ¥60–80 per person. Diagonally opposite Huogongdian. Expect queues at meal times: take a number and wander Pozi Street. Listed closing times differ (21:30 or midnight), so arrive by about 21:00.'},
+ {id:'eat-chayan',cat:'drink',name:'Chayan Yuese',zh:'茶颜悦色（南门口步行街店）',lat:28.183778,lng:112.976509,addr:'长沙市天心区城南西路266号',
+  hours:'Mo-Su 11:00-23:00',price:{lvl:1,text:'~¥15–20 a cup'},late:true,conf:'high',checked:'2026-09',tags:['milk tea','sexytea'],
+  order:[{zh:'幽兰拿铁',py:'yōulán nátiě',en:'Youlan latte (black tea, cream, pecans)',price:'~¥16–18'}],
+  mods:[{zh:'少糖',en:'Less sugar'},{zh:'去冰',en:'No ice'},{zh:'热的',en:'Hot'}],
+  blurb:'Changsha’s famous milk-tea chain (English brand “Sexytea”), with branches every few hundred metres around here; this one is at the street’s south end by Nanmenkou Metro. Open about 11:00–23:00. The signature 幽兰拿铁 (black-tea latte with cream and pecans) is about ¥16–18.'},
+
+ /* ---- more nearby: researched and independently re-checked in Sep 2026 (places_verified.json). Walk times in blurbs are from Huangxing Rd. ---- */
+ {id:'p-chuiyan',cat:'food',name:'Chuiyan Stir-Fried Beef (by the Huang Xing statue)',short:'Chuiyan',zh:'炊烟小炒黄牛肉（步行街黄兴铜像店）',lat:28.1913,lng:112.97627,
+  addr:'长沙市天心区黄兴南路步行街八角亭2楼（黄兴铜像旁）',tel:'+86 731 8558 1977',
+  hoursText:'Reportedly about 11:00–21:30 (one 2025 listing)',price:{lvl:2,text:'~¥70–80 per person'},conf:'medium',checked:'2026-09',
+  order:[{zh:'小炒黄牛肉',py:'xiǎochǎo huáng niúròu',en:'Stir-fried yellow beef (the signature)'},{zh:'皮蛋辣椒擂茄子',py:'pídàn làjiāo léi qiézi',en:'Pounded chilli, century egg and aubergine'},
+         {zh:'酸萝卜炒牛百叶',py:'suān luóbo chǎo niú bǎiyè',en:'Pickled radish with beef tripe (very spicy)',spice:3}],
+  tags:['beef','hunan'],
+  blurb:'Popular Hunan chain; order the signature stir-fried yellow beef (小炒黄牛肉). Also good: pounded chilli, century egg and aubergine (皮蛋辣椒擂茄子) or pickled radish with beef tripe (very spicy). About ¥70–80 per person. 2F, lift beside the Huang Xing statue. Queues at peak times; reportedly closes about 21:30.'},
+ {id:'p-ben-luobo',cat:'food',name:'Ben Luobo Liuyang Restaurant (Yuying Street)',short:'Ben Luobo',zh:'笨罗卜浏阳菜馆（黄兴铜像育英街店）',lat:28.190564,lng:112.977632,
+  addr:'长沙市芙蓉区育英街14号',tel:'+86 731 8505 3358',
+  hoursText:'About 10:30–23:30 (Ctrip); a 2023 listing says 10:00–23:00',price:{lvl:2,text:'~¥40–60 per person'},late:true,conf:'high',checked:'2026-09',
+  order:[{zh:'醋蒸鸡',py:'cù zhēng jī',en:'Vinegar-steamed chicken'},{zh:'小炒鲜黄牛肉',py:'xiǎochǎo xiān huáng niúròu',en:'Stir-fried fresh beef'},
+         {zh:'香煎金钱蛋',py:'xiāng jiān jīnqián dàn',en:'Pan-fried “coin” eggs',price:'~¥20'}],
+  orderTip:'Very spicy; expect a wait at dinner.',tags:['hunan','liuyang'],
+  blurb:'Busy, budget Liuyang-style Hunan place. This branch is #1 on Trip.com’s Changsha must-visit list. Try vinegar-steamed chicken (醋蒸鸡), stir-fried fresh beef (小炒鲜黄牛肉) and pan-fried “coin” eggs (香煎金钱蛋). About ¥40–60 per person. Very spicy. Expect a wait at dinner. Open until about 23:00–23:30.'},
+ {id:'p-yizhandeng',cat:'food',name:'Yizhandeng (Ant Workshop, next to IFS)',short:'Yizhandeng',zh:'壹盏灯（蚂蚁工房店）',lat:28.193362,lng:112.978472,
+  addr:'长沙市芙蓉区东牌楼街蚂蚁工房2–3楼（IFS国金中心旁）',tel:'+86 731 8877 8889',
+  hoursText:'About 11:00–22:00 (2025 guide); some listings show an afternoon break and a 21:00 close, so check Amap',price:{lvl:2,text:'~¥60–75 per person'},conf:'medium',checked:'2026-09',
+  order:[{zh:'鸭掌筋',py:'yāzhǎng jīn',en:'Duck-foot tendons',price:'~¥58'},{zh:'酸萝卜炒肚丝',py:'suān luóbo chǎo dǔsī',en:'Pickled radish with shredded tripe',price:'~¥48'},
+         {zh:'红烧米豆腐',py:'hóngshāo mǐ dòufu',en:'Braised rice tofu'}],
+  orderTip:'Spicy: ask for 微辣 (mild).',tags:['hunan'],
+  blurb:'Popular local Hunan restaurant on 2F–3F of the Ant Workshop building on Dongpailou St, beside IFS. Try duck-foot tendons (鸭掌筋), pickled radish with tripe (酸萝卜炒肚丝) and braised rice tofu (红烧米豆腐). About ¥60–75 per person. Spicy: ask for 微辣 (mild). Queues at mealtimes; check hours in Amap.'},
+ {id:'p-yulou-dong',cat:'food',name:'Yulou Dong (Beizheng Street flagship)',short:'Yulou Dong',zh:'玉楼东（北正街旗舰店）',lat:28.200871,lng:112.974922,
+  addr:'长沙市开福区北正街318-1号（中山亭西北角）',
+  hours:'Mo-Su 11:00-14:00,17:00-21:00',hoursText:'Hours from Dianping; Baidu Maps says evenings until 23:30.',price:{lvl:2,text:'~¥50–80 per person'},conf:'high',checked:'2026-09',
+  order:[{zh:'剁椒鱼头',py:'duòjiāo yútóu',en:'Chopped-chilli fish head'},{zh:'麻辣仔鸡',py:'málà zǐjī',en:'Spicy chicken'},{zh:'发丝牛百叶',py:'fàsī niú bǎiyè',en:'Shredded beef tripe'}],
+  tags:['hunan','fish head'],
+  blurb:'Hunan restaurant founded in 1904; this two-floor flagship opened in 2020. Order the chopped-chilli fish head, spicy chicken (麻辣仔鸡) and shredded beef tripe (发丝牛百叶). About ¥50–80 per person. Open 11:00–14:00 and 17:00–21:00 (Baidu Maps says 23:30), so go early. About 25 minutes’ walk north of Huangxing Rd.'},
+ {id:'p-xia-xiaolong',cat:'food',name:'Xia Xiaolong Old Changsha Crayfish (Wuyi Square)',short:'Xia Xiaolong',zh:'虾小龙老长沙龙虾馆（五一广场店）',lat:28.195592,lng:112.97571,
+  addr:'长沙市开福区五一大道868号慕弈H酒店1楼',tel:'+86 731 8228 9777',
+  hours:'Mo-Su 11:30-02:00',hoursText:'Trip.com lists 11:30–02:00 for this branch. The chain’s flagship closes 14:30–17:00, so this one may too: check before an afternoon visit.',price:{lvl:3,text:'~¥120 per person'},late:true,conf:'medium',checked:'2026-09',
+  order:[{zh:'口味虾',py:'kǒuwèi xiā',en:'Spicy crayfish'},{zh:'蒜蓉虾',py:'suànróng xiā',en:'Garlic crayfish (for less heat)'},{zh:'口味花甲',py:'kǒuwèi huājiǎ',en:'Spicy clams'}],
+  tags:['crayfish'],
+  blurb:'Crayfish hall decorated like the old Changsha railway station. Order spicy crayfish (口味虾), or garlic crayfish (蒜蓉虾) if you can’t take heat, plus spicy clams (口味花甲). About ¥120 per person. Listed hours 11:30–02:00. Ground floor of the Muyi H hotel (formerly Grand Mercure), at the northwest corner of Wuyi Square.'},
+ {id:'p-tianbao',cat:'food',name:'Tianbao Brothers (Huijing City)',short:'Tianbao Brothers',zh:'天宝兄弟（汇景城店）',lat:28.174164,lng:112.970455,
+  addr:'长沙市天心区白沙路汇景城（汇景发展环球中心）B栋3楼3017-3018',tel:'+86 731 8488 2888',
+  hoursText:'About 15:30–03:00 (2023–25 listings)',price:{lvl:4,text:'~¥170–230 per person'},late:true,conf:'medium',checked:'2026-09',
+  order:[{zh:'天宝口味虾',py:'Tiānbǎo kǒuwèi xiā',en:'Tianbao spicy crayfish'},{zh:'绝味罗小宝',py:'juéwèi luó xiǎobǎo',en:'Giant river prawns'}],
+  orderTip:'Take a queue number early: WeChat account 天宝兄弟长沙店 (up to 7 people) or at the door.',tags:['crayfish','prawns'],
+  blurb:'Famous spicy-crayfish (口味虾) and giant-prawn restaurant, its only Changsha branch: 3F, Tower B, Huijing City (Baisha Rd × Shuyuan Rd), about 1.7 km / 22 min walk SSW of Huangxing Rd. Order 天宝口味虾 and the giant prawns 绝味罗小宝; expect about ¥170–230 per person. Take a queue number from mid-afternoon, at the door or on WeChat 天宝兄弟长沙店; waits often run to hours. Open roughly 15:30–03:00.'},
+ {id:'p-juwei-quji',cat:'food',name:'Juwei Quji Crayfish Hall (by IFS)',short:'Juwei Quji',zh:'聚味瞿记·龙虾堂（国金店）',lat:28.19169,lng:112.97796,
+  addr:'长沙市芙蓉区解放西路262号城市生活家1楼',
+  hours:'Mo-Su 11:30-14:30,16:30-03:00',price:{lvl:3,text:'~¥140 per person'},late:true,conf:'high',checked:'2026-09',
+  order:[{zh:'瞿记卤虾',py:'Qújì lǔ xiā',en:'Braised crayfish'},{zh:'瞿记秘制虾',py:'Qújì mìzhì xiā',en:'Secret-recipe crayfish'}],
+  tags:['crayfish'],
+  blurb:'Top-rated branch of the local Juwei Quji crayfish chain, ground floor of City Life (城市生活家) on Jiefang West Rd near IFS. Order braised crayfish (卤虾) or secret-recipe crayfish (秘制虾). About ¥140 a head. Open 11:30–14:30 and 16:30–03:00. Check the name exactly, as copycats exist.'},
+ {id:'p-wu-aijie',cat:'snack',name:'Wu Aijie Stinky Tofu (Grandma Five’s)',short:'Wu Aijie',zh:'五娭毑臭豆腐（黄兴南路店）',lat:28.180938,lng:112.97614,
+  addr:'长沙市天心区黄兴南路80号（民康医院内，粟茂巷口）',
+  hours:'Mo-Su 09:30-23:30',note:'Can sell out before closing.',price:{lvl:1,text:'~¥10 for 6 pieces'},late:true,conf:'high',checked:'2026-09',
+  order:[{zh:'臭豆腐',py:'chòu dòufu',en:'Black stinky tofu (chili goes on unless you say 不要辣)',price:'~¥10 for 6'}],
+  tags:['stinky tofu'],
+  blurb:'Family-run stinky tofu stall, going for 40-plus years, at the mouth of 粟茂巷 by Minkang Hospital, about 300 m south of Nanmenkou metro. Black, crisp-fried tofu, about ¥10 for 6 pieces; chili goes on unless you say 不要辣. Baidu Maps lists 9:30–23:30; may queue or sell out.'},
+ {id:'p-jinji',cat:'snack',name:'Jinji Sugar-Oil Baba (Nanmenkou)',short:'Jinji',zh:'南门口金记糖油坨坨店（长郡中学店）',lat:28.184696,lng:112.975323,
+  addr:'长沙市天心区登仁桥巷11号1662主题购物中心1楼',
+  hours:'Mo-Su 10:00-23:00',price:{lvl:1,text:'~¥5–10 a skewer'},late:true,conf:'high',checked:'2026-09',
+  order:[{zh:'糖油坨坨',py:'táng yóu tuótuo',en:'Sugar-oil baba, seven to a skewer'}],tags:['sugar-oil baba','糖油粑粑'],
+  blurb:'Long-running Nanmenkou shop (since 1986) for 糖油坨坨, the Changsha name for sugar-oil baba: small glutinous-rice balls fried and glazed in sugar syrup, seven to a skewer, about ¥5–10. Fried fresh in batches, so expect a queue. Eat them hot. Open roughly 10:00–23:00.'},
+ {id:'p-sijie',cat:'food',name:'Sijie Noodle House (Pozi Street)',short:'Sijie Noodles',zh:'肆姐面粉馆（坡子街店）',lat:28.190278,lng:112.972001,
+  addr:'长沙市天心区坡子街132号星月楼1层',tel:'+86 731 8862 6262',
+  hoursText:'Listed 06:30–02:30; older listings say it closes earlier, so check before going late',price:{lvl:1,text:'~¥10–20'},late:true,conf:'medium',checked:'2026-09',
+  order:[{zh:'原汤牛肉粉',py:'yuántāng niúròu fěn',en:'Beef rice noodles in clear broth'},{zh:'肉饼蒸蛋',py:'ròubǐng zhēng dàn',en:'Steamed egg with pork patty'},
+         {zh:'辣椒炒肉粉',py:'làjiāo chǎoròu fěn',en:'Rice noodles with chili-fried pork'}],
+  orderTip:'Ask for 清汤 (clear broth) if you want it mild.',tags:['noodles','rice noodles'],
+  blurb:'Long-running Pozi Street rice-noodle shop, known as Zhang Yixing’s childhood favourite. Get 原汤牛肉粉 (beef, clear broth) with 肉饼蒸蛋 (steamed egg and pork patty), or 辣椒炒肉粉. Ask for 清汤 if you want it mild. Old wooden tables; ¥10–20. Listed 06:30–02:30, but check before going late.'},
+ {id:'p-xiaji',cat:'food',name:'Xiaji Rice Noodles',short:'Xiaji',zh:'夏记粉店（黄兴路步行街店）',lat:28.18849,lng:112.97906,
+  addr:'长沙市芙蓉区观音井巷4号',tel:'+86 731 8514 9029',
+  hours:'Mo-Su 06:00-14:00,17:00-22:00',price:{lvl:1,text:'~¥15–20'},conf:'medium',checked:'2026-09',
+  order:[{zh:'肉丸粉',py:'ròuwán fěn',en:'Rice noodles with hand-made pork balls'},{zh:'排骨粉',py:'páigǔ fěn',en:'Pork-rib rice noodles'}],
+  tags:['noodles','rice noodles'],
+  blurb:'Long-running local 米粉 shop a few metres into Guanyinjing Lane (观音井巷), off Renmin West Rd about 200 m east of Huangxing Square. Order 肉丸粉 (hand-made pork-ball noodles); pork-rib 排骨粉 is the other favourite. About ¥15–20. Open roughly 06:00–14:00 and 17:00–22:00; busy at breakfast.'},
+ {id:'p-mengzhong',cat:'food',name:'Mengzhong BBQ (Gaozheng Street)',short:'Mengzhong BBQ',zh:'盟重烧烤（高正街店）',lat:28.185721,lng:112.981082,
+  addr:'长沙市天心区高正街77号（都正街口）',
+  hours:'Su-Th 17:30-01:00; Fr,Sa 17:30-01:30',price:{lvl:2,text:'~¥80 per person'},late:true,conf:'high',checked:'2026-09',
+  order:[{zh:'盟重牛油',py:'Méngzhòng niúyóu',en:'Grilled beef-fat skewers'},{zh:'烈火牛肉',py:'lièhuǒ niúròu',en:'Spicy beef'},{zh:'半月烤鱼',py:'bànyuè kǎoyú',en:'Grilled fish'}],
+  orderTip:'Take a queue number at the door or online in Dianping/Meituan.',tags:['bbq','barbecue','skewers'],
+  blurb:'Busy late-night Changsha BBQ themed on the mud-walled town from the game “Legend of Mir”. Try 盟重牛油 (grilled beef-fat skewers), 烈火牛肉 (spicy beef) and 半月烤鱼 (grilled fish), about ¥80 per person. Expect long queues even late at night. Take a number at the door or in Dianping/Meituan.'},
+ {id:'p-yang-dia',cat:'snack',name:'Yang Dia Sweet Rice Wine',short:'Yang Dia',zh:'杨嗲甜酒（长郡中学店）',lat:28.186386,lng:112.973686,
+  addr:'长沙市天心区师敬湾巷21号',
+  hoursText:'About 12:00–20:30 (seasonal; 10:00–20:00 in winter and spring)',price:{lvl:1,text:'~¥8–15 a bowl'},conf:'medium',checked:'2026-09',
+  order:[{zh:'小钵子甜酒',py:'xiǎo bōzi tiánjiǔ',en:'Small bowl of sweet rice wine (often iced)'},{zh:'酒酿梅子冻',py:'jiǔniàng méizi dòng',en:'Rice-wine plum jelly'},
+         {zh:'甜酒汤圆冲蛋',py:'tiánjiǔ tāngyuán chōng dàn',en:'Hot sweet rice wine with rice balls and egg'}],
+  tags:['dessert','sweet rice wine'],
+  blurb:'Family-run shop deep in an old alley near Nanmenkou that has made its own 甜酒 (fermented sweet rice wine) for 30+ years. Try iced 小钵子甜酒 or 酒酿梅子冻, or hot 甜酒汤圆冲蛋. Bowls about ¥8–15. Closes around 20:00–21:00 depending on season. Hard to spot, so follow the pin.'},
+ {id:'p-bixiang',cat:'nightlife',name:'Bixiang Chuxiang riverside lanes',short:'Bixiang Chuxiang',zh:'碧湘楚巷（天符宫）',lat:28.181373,lng:112.969377,
+  addr:'长沙市天心区湘江中路与下碧湘街交汇处（地铁3号线灵官渡站）',
+  hoursText:'Open-air lanes; shop and bar hours vary',price:{lvl:0,text:'Free to wander'},conf:'medium',checked:'2026-09',tags:['bars','riverside','tianfu palace'],
+  blurb:'Riverside lanes (opened 27 Jun 2026) at Lingguandu Metro (Line 3), built around Tianfu Palace (天符宫), a restored Qing temple. Free to wander, with river views toward Orange Isle. Bars include folk-music 滚滚民谣 and 硬米深夜酒馆. 点都德 dim sum opens 28 Sep 2026. It’s new, so some units may still be empty.'},
+ {id:'p-river-cruise',cat:'experience',name:'Xiang River cruise (Du Fu Pavilion pier)',short:'River cruise',zh:'湘江游船（杜甫江阁停靠点）',lat:28.1835,lng:112.9682,
+  addr:'长沙市天心区湘江中路 杜甫江阁南侧 湘江游船停靠点',
+  hoursText:'Sailing times vary and aren’t published; check the 趣长沙 WeChat mini-program',price:{lvl:4,text:'Night ¥168 · day ¥98'},
+  note:'Pier position not confirmed: it is on the riverbank, possibly up to 250 m south of the pin.',conf:'low',checked:'2026-09',tags:['boat','cruise'],
+  blurb:'Hybrid sightseeing boats from a new pontoon on the riverbank just south of Du Fu Pavilion. Night route ~70 min past lit Orange Isle to Fisherman’s Wharf and back, ¥168; day loop ~50 min, ¥98. Book in WeChat mini-program 趣长沙 (real-name, bring passport); sailing times vary, check first.'},
+ {id:'p-orange-bridge',cat:'sight',name:'Orange Isle Bridge night walk',short:'Orange Isle Bridge',zh:'橘子洲大桥',lat:28.19552,lng:112.96975,addr:'湘江中路 橘子洲大桥东桥头',
+  hoursText:'Bridge sidewalks open all night (no posted hours)',price:{lvl:0,text:'Free'},late:true,conf:'high',checked:'2026-09',tags:['river','view'],
+  blurb:'Take the stairs up at the east bridgehead on Xiangjiang Middle Rd and walk out over the river for views of both banks and Orange Isle. Free. Stairs mid-bridge lead down to the isle (open until 22:00, free real-name booking). No isle fireworks since June 2023. The light show runs only on event nights.'},
+ {id:'p-ferris-wheel',cat:'experience',name:'Changsha Ferris Wheel (Star City Eye)',short:'Ferris wheel',zh:'长沙摩天轮（星城之眼）',lat:28.178802,lng:112.98557,
+  addr:'长沙市天心区芙蓉中路二段172号（贺龙体育馆南侧）',
+  hours:'Mo-Fr 18:30-22:30; Sa,Su,PH 09:30-22:30',last:'22:00',price:{lvl:2,text:'~¥70 at the window'},conf:'medium',checked:'2026-09',tags:['view'],
+  hoursText:'Public holidays follow the weekend hours (one 2024 listing gives a 12:00 start at weekends).',
+  blurb:'120 m rooftop wheel beside Helong Stadium; ~20-min turn in enclosed, air-conditioned cabins. ¥70 at the window (kids under 1.2 m free with an adult). Mon–Fri 18:30–22:30, weekends and public holidays 09:30–22:30; last entry 22:00. Weather or private bookings can close it. Not for heart conditions or fear of heights.'},
+ {id:'p-duzheng',cat:'sight',name:'Duzheng Street historic lanes',short:'Duzheng Street',zh:'都正街',lat:28.186528,lng:112.981457,addr:'长沙市都正街（人民西路南侧，近天心阁）',
+  hoursText:'Street open all night; cafés and bars into the late evening',price:{lvl:0,text:'Free'},late:true,conf:'high',checked:'2026-09',tags:['old street','crosstalk','hanfu'],
+  blurb:'Stone-paved Qing-era lane of grey-brick shopfronts and red lanterns, running south from Renmin West Rd to 县正街/高正街, north of Tianxin Pavilion. Coffee, 得乐社 crosstalk teahouse, hanfu photo shops, late crayfish/snack spot 扶记 (~¥70 per person). Free, open 24 h; quieter than Huangxing Rd; about 10 min walk from it.'},
+ {id:'p-baisha-well',cat:'sight',name:'Baisha Ancient Well',short:'Baisha Well',zh:'白沙古井',lat:28.17909,lng:112.980505,addr:'长沙市天心区白沙路 白沙古井公园',
+  hoursText:'Small open park, listed as open all day',price:{lvl:0,text:'Free'},conf:'medium',checked:'2026-09',tags:['spring','well'],
+  blurb:'“Changsha’s first spring”, said to be the water in Mao’s line “just drank Changsha water”. Four stone spring pools in a small free park beside Baisha Rd, west of Helong Stadium. Locals still fill bottles here. Open all day; allow 10–15 min. Boil the water before drinking.'},
+ {id:'p-first-normal',cat:'sight',name:'Hunan First Normal School (Mao memorial hall)',short:'First Normal School',zh:'湖南第一师范旧址',lat:28.176525,lng:112.972095,
+  addr:'长沙市天心区书院路356号',
+  hours:'Mo off; Tu-Su,PH 09:00-17:00',last:'16:30',hoursText:'Closed Mondays except public holidays (open Mon 5 Oct 2026); enter by the north gate.',price:{lvl:0,text:'Free · book ahead (real name)'},conf:'high',checked:'2026-09',tags:['mao','museum'],
+  blurb:'Campus where young Mao studied (1913–18): national heritage site with Chinese-Western courtyard buildings, reopened 15 Apr 2026 after restoration with 10 exhibition halls. Free; real-name booking via Alipay (第一师范纪念馆). Tue–Sun 09:00–17:00, last entry 16:30; closed Mon except public holidays. Enter by the north gate. Daytime only.'},
+ {id:'p-zhongshan',cat:'sight',name:'Zhongshan Pavilion clock tower',short:'Zhongshan Pavilion',zh:'中山亭',lat:28.200355,lng:112.976075,addr:'长沙市黄兴路与中山路交汇处',
+  hoursText:'Exterior viewable any time',price:{lvl:0,text:'Free'},conf:'high',checked:'2026-09',tags:['clock tower'],
+  blurb:'1930 five-storey clock tower honouring Sun Yat-sen. It housed Changsha’s first public standard clocks and survived the 1938 fire and wartime battles (since restored). It stands on a traffic island at Huangxing Rd/Zhongshan Rd, on the walk north from Wuyi Square to Chaozong Street. Exterior photo stop, free.'},
+ {id:'p-dongguashan',cat:'snack',name:'Dongguashan night-snack street',short:'Dongguashan',zh:'东瓜山夜市（裕南街）',lat:28.173,lng:112.9726,addr:'长沙市天心区裕南街与东瓜山一条巷交汇处',
+  hoursText:'Stalls open about 16:00–17:45 and close around 01:00–02:30; busiest from about 20:00',price:{lvl:2,text:'~¥40–80 per person'},late:true,conf:'medium',checked:'2026-09',tags:['night market','snacks','sausage'],
+  blurb:'Gritty, locally loved night-snack cluster where Yunan St meets Dongguashan Lane 1. Try fried pork sausage (东瓜山肉肠, ~¥3), 丹丹热卤 braised snacks, 紫苏桃子姜 and 盟重烧烤 barbecue (17:30–01:00, queues). Stalls open about 16:00–17:00 and close around 01:00–02:30; busiest from 20:00. About ¥40–80 per person.'}
+ /* ↑ paste researched places above this line (add a comma after the previous entry) */
+];
+
+/* ---------- walks: id skeletons (order in stops = loop order; numbers are derived from it) ----------
+   A place listed in any walk is owned by it and never shows in another walk's "More nearby". */
+var DAYS={
+ today:{label:'Hotel loop',key:'changsha-night-walk-v1',base:'hotel',
+   stops:['tianxin','huangxing','dufu','wenheyou','ifs','jiefang'],extras:['pozi','taiping'],eats:[]},
+ tomorrow:{label:'Huangxing Rd',key:'changsha-night-walk-v1-tomorrow',base:'hx-base',
+   homeBlurb:'Your hotel, about 1 km east of Huangxing Road. Show the Driver card to a taxi driver to get back.',
+   stops:['hx-nanmen','hx-tianxin','hx-hualong','hx-ifs','hx-jiayi','hx-dufu','hx-wenmiao'],
+   extras:['hx-jiandu','hx-chaozong','hx-juzizhou'],
+   eats:['eat-huogong','eat-feidachu','eat-wenheyou','eat-chayan']}
+};
+
+/* ---------- opening hours: a tolerant subset of OSM opening_hours, always read in China time ----------
+   hours := '24/7' | rule (';' rule)* ; rule := [days SP] (ranges | 'off') ; days := day ['-' day] | 'PH' | YYYY-MM-DD, joined by ','
+   (day := Mo|Tu|..|Su, also Mon..Sun). PH = the public holidays in HOLIDAYS; YYYY-MM-DD = one China calendar date (a notice's
+   one-off closure or opening). ranges := HH:MM-HH:MM (',' HH:MM-HH:MM)*, an end <= start closes after midnight. Anything else
+   (prose, "roughly", brackets) fails on purpose and is shown as text: wrong hours are worse than none. For each day the last rule
+   that names it wins (its weekday, PH or its date), so put PH and date rules last:
+   'Tu off; Mo,We-Su,PH 09:00-17:00; 2026-10-08 off' = closed Tuesdays unless a holiday, and closed on 8 Oct 2026. */
+var DAYIX={mo:0,tu:1,we:2,th:3,fr:4,sa:5,su:6,mon:0,tue:1,wed:2,thu:3,fri:4,sat:5,sun:6},WEEKDAY=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+/* China's public holidays (State Council notice 国办发明电〔2025〕7号): the days a PH rule applies. Mid-Autumn 25–27 Sep and National
+   Day 1–7 Oct 2026; add later years once they are published. The make-up working days (Sun 20 Sep, Sat 10 Oct 2026) are not
+   modelled: they keep their weekend rules. */
+var HOLIDAYS=['2026-09-25','2026-09-26','2026-09-27','2026-10-01','2026-10-02','2026-10-03','2026-10-04','2026-10-05','2026-10-06','2026-10-07'];
+/* China calendar days are numbered from 1970-01-01 (UTC+8 all year, no daylight saving); weekday (n+3)%7, Monday = 0 */
+function isoDay(s){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);if(!m)return null;var t=Date.UTC(+m[1],+m[2]-1,+m[3]),d=new Date(t);
+  return d.getUTCFullYear()===+m[1]&&d.getUTCMonth()===+m[2]-1&&d.getUTCDate()===+m[3]?t/864e5:null}
+var PH={};HOLIDAYS.forEach(function(s){var n=isoDay(s);if(n!=null)PH[n]=1});
+function hmMin(s){var m=/^(\d{1,2}):(\d{2})$/.exec(s);if(!m)return NaN;var h=+m[1],mi=+m[2];return h>24||mi>59||(h===24&&mi>0)?NaN:h*60+mi}
+function hmFmt(t){t=((t%1440)+1440)%1440;return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')}
+function parseHours(str){
+  if(typeof str!=='string')return null;
+  var s=str.replace(/[–—−]/g,'-').replace(/\s+/g,' ').trim().replace(/\s*\bdaily$/i,'').trim();
+  if(!s)return null;
+  if(s==='24/7')return{always:true,w:[0,1,2,3,4,5,6].map(function(){return[[0,1440]]})};
+  var w=[null,null,null,null,null,null,null],ok=true,rules=[],x=false,SEL='(?:\\d{4}-\\d{2}-\\d{2}|[a-z]{2,3}(?:\\s*-\\s*[a-z]{2,3})?)';
+  s.split(/\s*;\s*/).forEach(function(rule){
+    if(!ok)return;
+    var m=new RegExp('^('+SEL+'(?:\\s*,\\s*'+SEL+')*)\\s+(\\S.*)$','i').exec(rule),days=[0,1,2,3,4,5,6],ph=false,dates=[],body=rule;
+    if(m){days=[];body=m[2];m[1].split(/\s*,\s*/).forEach(function(d){
+      if(/^\d/.test(d)){var n=isoDay(d);if(n==null)ok=false;else dates.push(n);return}
+      if(/^ph$/i.test(d)){ph=true;return}
+      var p=d.toLowerCase().split(/\s*-\s*/),a=DAYIX[p[0]],b=p.length>1?DAYIX[p[1]]:a;
+      if(a==null||b==null){ok=false;return}
+      for(var i=a;;i=(i+1)%7){days.push(i);if(i===b)break}
+    })}
+    if(!ok)return;
+    var rs=[];
+    if(!/^off$/i.test(body))body.split(/\s*,\s*/).forEach(function(r){
+      var q=/^(\d{1,2}:\d{2}) ?- ?(\d{1,2}:\d{2})$/.exec(r),o=q?hmMin(q[1]):NaN,c=q?hmMin(q[2]):NaN;
+      if(isNaN(o)||isNaN(c)||o>=1440){ok=false;return}
+      if(c<=o)c+=1440;rs.push([o,c]);
+    });
+    if(!ok||!rs.length&&!/^off$/i.test(body)){ok=false;return}
+    days.forEach(function(d){w[d]=rs});/* w = an ordinary week, without holidays or dated rules */
+    if(ph||dates.length)x=true;
+    var dm=[0,0,0,0,0,0,0];days.forEach(function(d){dm[d]=1});rules.push({d:dm,ph:ph,n:dates,rs:rs});
+  });
+  if(!ok)return null;
+  var h={w:w.map(function(z){return z||[]})};if(x){h.x=true;h.r=rules}
+  return h;
+}
+/* the ranges of China calendar day n: the week's rule for its weekday unless a PH or dated rule names that day */
+function dayRs(h,n){
+  if(!h.x)return h.w[((n+3)%7+7)%7];
+  var wd=((n+3)%7+7)%7,ph=!!PH[n],rs=[];
+  h.r.forEach(function(r){if(r.d[wd]||r.ph&&ph||r.n.indexOf(n)>=0)rs=r.rs});
+  return rs;
+}
+/* week-minute values are read against today, so day index d (0 = Monday) of a value means the nearest such weekday to today;
+   dayBase(d)+d is that calendar day, and the days before and after it follow on */
+function dayBase(d){var n=Math.floor((Date.now()+288e5)/864e5),k=((d-(n+3)%7)%7+7)%7;if(k>3)k-=7;return n+k-d}
+var CSTF=null;
+/* minutes since Monday 00:00, China time (UTC+8, no daylight saving) */
+function cst(date){
+  var d=date||new Date();
+  try{
+    if(!CSTF)CSTF=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Shanghai',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+    var o={};CSTF.formatToParts(d).forEach(function(p){o[p.type]=p.value});
+    var wd=WEEKDAY.indexOf(o.weekday),h=+o.hour%24,mi=+o.minute;
+    if(wd>=0&&!isNaN(h)&&!isNaN(mi))return wd*1440+h*60+mi;
+  }catch(e){}
+  var u=new Date(d.getTime()+8*3600000);return((u.getUTCDay()+6)%7)*1440+u.getUTCHours()*60+u.getUTCMinutes();
+}
+/* the state of parsed hours h at week-minute t: the open range (and its last entry), or the next opening and today's last close.
+   last: last-entry minutes (a list, one per session); each applies to the range it falls inside, the later one if two do */
+function hoursAt(h,t,last){
+  t=((t%10080)+10080)%10080;
+  var dow=Math.floor(t/1440),prev=null,base=h.x?dayBase(dow):0;
+  function rsOf(d){return h.x?dayRs(h,base+d):h.w[(d%7+7)%7]}
+  for(var k=-1;k<=0;k++){
+    var d=dow+k,rs=rsOf(d);
+    for(var i=0;i<rs.length;i++){
+      var s=d*1440+rs[i][0],e=d*1440+rs[i][1];
+      if(t>=s&&t<e){var la=null;(last||[]).forEach(function(lm){var l=d*1440+lm;if(l<s)l+=1440;if(l>s&&l<=e&&(la==null||l>la))la=l});return{open:true,t:t,end:e,last:la}}
+      if(e<=t&&e>dow*1440&&(prev==null||e>prev))prev=e;
+    }
+  }
+  var next=null;
+  for(var d2=dow;d2<=dow+7;d2++){var r2=rsOf(d2);for(var j=0;j<r2.length;j++){var s2=d2*1440+r2[j][0];if(s2>t&&(next==null||s2<next))next=s2}if(next!=null)break}
+  return{open:false,t:t,next:next,prev:prev,dayOff:!rsOf(dow).length};
+}
+/* {s:'open'|'soon'|'closed'|'always'|'unknown', text, short} at week-minute `at` (your arrival); "in N min" counts from `now`.
+   text is the spec wording for rows and popups; short is the one-line version for the next card, where the tonight line
+   carries the countdown */
+function openState(p,at,now){
+  var h=p&&p._h;if(!h||p.conf==='low')return{s:'unknown'};
+  if(h.always)return{s:'always',text:'Open 24 h'};
+  if(now==null)now=at;
+  var r=hoursAt(h,at,p._last),ahead=Math.max(0,at-now),dayEnd=(Math.floor(r.t/1440)+1)*1440;
+  /* the start of a later session today, once the range that is open at r.t has ended */
+  function later(){var nx=hoursAt(h,r.end,p._last);return!nx.open&&nx.next!=null&&nx.next<dayEnd?hmFmt(nx.next):null}
+  if(r.open&&!(r.last!=null&&r.t>=r.last)){
+    var dl=r.last!=null?r.last:r.end,left=dl-r.t,o,lt=r.last!=null?'Last entry '+hmFmt(dl):null;
+    if(left<=45)o={s:'soon',text:(lt||'Closes '+hmFmt(dl))+' · in '+(left+ahead)+' min',short:lt||'Closes '+hmFmt(dl)};
+    else o={s:'open',text:'Open · '+(lt?'last entry ':'closes ')+hmFmt(dl),short:lt||'Open till '+hmFmt(dl)};
+    o.close=hmFmt(r.end);o.closeIn=r.end-r.t+ahead;o.deadlineIn=left+ahead;o.lastHM=r.last!=null?hmFmt(r.last):null;
+    o.reopens=later();
+    return o;
+  }
+  var c={s:'closed'};
+  if(ahead>0){var n=hoursAt(h,now,p._last);if(n.open&&!(n.last!=null&&n.t>=n.last)){c.text='Closed when you arrive';/* spec wording, next card included */c.beforeArrival=hmFmt(n.last!=null?n.last:n.end);return c}}
+  if(r.open){/* open, but no more entry: say when the next session starts if that is still today */
+    c.prev=hmFmt(r.last);c.lastPassed=true;c.opens=later();
+    if(c.opens){c.text='Past last entry · opens '+c.opens;c.short='Reopens '+c.opens}else{c.text='Past last entry ('+c.prev+')';c.short='Past last entry'}
+    return c}
+  if(r.next!=null&&r.next<dayEnd){c.opens=hmFmt(r.next);c.text='Closed · opens '+c.opens;c.short='Closed till '+c.opens}
+  else if(r.dayOff)c.text='Closed today';
+  else if(r.next!=null&&r.next<dayEnd+1440){c.text='Closed · opens '+hmFmt(r.next)+' tomorrow';c.short='Closed till tomorrow'}
+  else if(r.next!=null){var wd=WEEKDAY[Math.floor(r.next/1440)%7];c.text='Closed · opens '+wd+' '+hmFmt(r.next);c.short='Closed till '+wd}
+  else c.text='Closed';
+  if(r.prev!=null)c.prev=hmFmt(r.prev);
+  c.dayOff=r.dayOff;
+  return c;
+}
+/* "Open late": computed for tonight from the hours when they parse (before 05:00 "tonight" is the evening before), else the late flag */
+function lateTonight(p,now){
+  var h=p._h;
+  if(h&&p.conf!=='low'){
+    if(h.always)return true;
+    if(now==null)now=cst();
+    var d=Math.floor(now/1440)%7;if(now%1440<300)d=(d+6)%7;
+    return(h.x?dayRs(h,dayBase(d)+d):h.w[d]).some(function(r){return r[1]>=23*60});
+  }
+  return !!p.late;
+}
+
+/* ---------- registry: research aliases, ref inheritance (one level), validation (bad entries are skipped, never thrown) ---------- */
+var ALIAS={name_en:'name',name_zh:'zh',lat_gcj:'lat',lng_gcj:'lng',category:'cat',address_zh:'addr',late_night:'late',sources:'src',confidence:'conf'};
+function aliasPlace(o){var p={};Object.keys(o).forEach(function(k){var t=ALIAS[k];if(!t)p[k]=o[k];else if(o[t]==null)p[t]=o[k]});return p}
+function slug(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}
+function priceLvl(t){
+  if(/^\W*free\b/i.test(t))return 0;
+  var m=/¥\s*(\d+(?:\.\d+)?)(?:\s*[-–—~]\s*¥?\s*(\d+(?:\.\d+)?))?/.exec(t);if(!m)return undefined;
+  var v=m[2]?(+m[1]+ +m[2])/2:+m[1];return v<30?1:v<=80?2:v<=150?3:4;
+}
+function normPlace(raw,byId){
+  var p=aliasPlace(raw);
+  if(p.ref!=null){var b=byId[p.ref];if(b&&b!==p){b=Object.assign({},b);delete b.id;delete b.ref;p=Object.assign(b,p)}else console.warn('Place '+(p.id||p.name)+' refers to unknown place '+p.ref)}
+  if(!p.id){p.id='p-'+slug(p.name);console.warn('Place "'+p.name+'" has no id; using '+p.id+'. Add it to PLACES so it stays stable.')}
+  var bad=!p.id||p.id==='p-'?'no id or name':!p.name?'no name':!p.zh?'no Chinese name':
+    typeof p.lat!=='number'||typeof p.lng!=='number'||!(p.lat>=27.9&&p.lat<=28.5&&p.lng>=112.7&&p.lng<=113.3)?'coordinates missing or outside Changsha':
+    !CATS.hasOwnProperty(p.cat)?'unknown category '+p.cat:'';
+  if(bad){console.warn('Skipping place '+(p.id||'?')+': '+bad,raw);return null}
+  if(p.hours!=null){var h=parseHours(p.hours);if(h)p._h=h;else{if(!p.hoursText)p.hoursText=String(p.hours);delete p.hours}}
+  if(p.last!=null){/* "HH:MM", or one per session as a list or "18:00,21:30" */
+    var ls=(Array.isArray(p.last)?p.last:String(p.last).split(/\s*,\s*/)).map(function(x){return hmMin(String(x).trim())});
+    if(!ls.length||ls.some(isNaN)){console.warn('Place '+p.id+': last "'+p.last+'" is not HH:MM');delete p.last}else p._last=ls}
+  if(typeof p.price==='string')p.price={lvl:priceLvl(p.price),text:p.price};
+  else if(p.price&&typeof p.price==='object'&&p.price.lvl==null&&p.price.text)p.price=Object.assign({},p.price,{lvl:priceLvl(p.price.text)});
+  if(typeof p.conf==='string')p.conf=p.conf.toLowerCase();
+  if(typeof p.walks==='string')p.walks=[p.walks];
+  return p;
+}
+var P={};
+(function(){
+  var byId={};
+  PLACES.forEach(function(o){if(o&&typeof o==='object'&&o.id)byId[o.id]=aliasPlace(o)});
+  PLACES.forEach(function(o){
+    if(!o||typeof o!=='object')return;
+    var p=normPlace(o,byId);if(!p)return;
+    if(P[p.id])console.warn('Duplicate place id '+p.id+': the later entry wins');
+    P[p.id]=p;
+  });
+})();
+
 var CARRY=['labels','fix','night','wake'];
 function carry(){var o={};CARRY.forEach(function(k){o[k]=S[k]});return o}
 
@@ -1080,12 +1482,52 @@ function walkMin(m){return Math.max(1,Math.round(m*1.25/78))}
 function fmtT(ms){var s=Math.floor(ms/1000),h=Math.floor(s/3600),mi=Math.floor(s%3600/60),se=s%60;return h?h+':'+String(mi).padStart(2,'0')+':'+String(se).padStart(2,'0'):mi+':'+String(se).padStart(2,'0')}
 function amap(s){return 'https://uri.amap.com/navigation?to='+s.lng+','+s.lat+','+encodeURIComponent(s.zh)+'&mode=walk&coordinate=gaode&callnative=1&src=changsha-night-walk'}
 
+/* ---------- the walk on screen: view objects built from the registry ----------
+   STOPS get their loop number, EXTRAS "+", EATS their category glyph; eat:true is the view flag that stops auto-tick.
+   NEAR = registry places no walk lists (and not the hotel), allowed on this walk, within 3 km of the base, not a ref-duplicate. */
+var DAY_KEY='changsha-walk-day';
+var DAY=(function(){try{var d=localStorage.getItem(DAY_KEY);return DAYS[d]?d:'today'}catch(e){return 'today'}})();
+function glyphOf(p){return p.glyph||CATS[p.cat].glyph}
+function buildWalk(day){
+  var W=DAYS[day],owned={hotel:1},mine={},refd={};
+  function list(w){return[w.base].concat(w.stops||[],w.extras||[],w.eats||[])}
+  Object.keys(DAYS).forEach(function(k){list(DAYS[k]).forEach(function(id){owned[id]=1})});
+  list(W).forEach(function(id){mine[id]=1;if(P[id]&&P[id].ref)refd[P[id].ref]=1});
+  function ids(a){return(a||[]).filter(function(id){if(P[id])return true;console.warn('The '+day+' walk lists an unknown or invalid place: '+id);return false})}
+  function v(id,x){var o=Object.assign({},P[id],x);if(o.n==null)o.n=glyphOf(o);return o}
+  var base=v(W.base,{role:'base'});
+  var home=W.base==='hotel'||!P.hotel?base:v('hotel',{role:'home',blurb:W.homeBlurb||P.hotel.blurb});
+  var cand=Object.keys(P).filter(function(id){
+    var p=P[id];
+    return !owned[id]&&!(p.walks&&p.walks.indexOf(day)<0)&&!(p.ref&&mine[p.ref])&&!refd[id]&&dist(base,p)<=3000;
+  }),inCand={};
+  cand.forEach(function(id){inCand[id]=1});
+  return{base:base,home:home,
+    stops:ids(W.stops).map(function(id,i){return v(id,{n:i+1,role:'stop'})}),
+    extras:ids(W.extras).map(function(id){return v(id,{n:'+',opt:true,role:'extra'})}),
+    eats:ids(W.eats).map(function(id){return v(id,{opt:true,eat:true,role:'eat'})}),
+    near:cand.filter(function(id){return !(P[id].ref&&inCand[P[id].ref])})
+      .map(function(id){return v(id,{opt:true,eat:true,role:'near'})})
+      .sort(function(a,b){return dist(base,a)-dist(base,b)})};
+}
+var WALK=buildWalk(DAY);
+var HOTEL=WALK.base,HOME=WALK.home,STOPS=WALK.stops,EXTRAS=WALK.extras,EATS=WALK.eats,NEAR=WALK.near;
+var ALL=STOPS.concat(EXTRAS,EATS);
+var BY={};ALL.concat([HOTEL],NEAR).forEach(function(s){BY[s.id]=s});
+/* the real hotel on every walk (taxi card, Hotel button, H pin); never in ALL, so no auto-tick and no list row */
+BY.home=BY[HOME.id]=HOME;
+/* everything with a pin: on the Huangxing Rd walk the hotel gets its own H pin (NEAR pins come with the WP6 filters) */
+var PINNED=ALL.concat([HOTEL],HOME!==HOTEL?[HOME]:[]);
+function isBase(s){return !!s&&(s===HOTEL||s===HOME)}
+
 /* ---------- state ---------- */
 var KEY=DAYS[DAY].key;
-var DEF={visited:{},trail:[],walked:0,elapsed:0,labels:'en',fix:true,night:true,wake:true};
+/* skip{id:1}: stops the tonight hint let you skip (per walk, not carried across walks); they aren't picked as next and don't count as done */
+var DEF={visited:{},trail:[],walked:0,elapsed:0,labels:'en',fix:true,night:true,wake:true,skip:{}};
 function load(){try{var r=localStorage.getItem(KEY);return r?JSON.parse(r):{}}catch(e){return{}}}
 var S=Object.assign({},DEF,load());
 if(!Array.isArray(S.trail))S.trail=[];
+S.skip=S.skip&&typeof S.skip==='object'&&!Array.isArray(S.skip)?Object.assign({},S.skip):{};/* own copy, never DEF's */
 var saveT=null;function save(){clearTimeout(saveT);saveT=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},500)}
 
 var watchId=null,sessionAt=null,me=null,meRaw=null,acc=null,gpsHeading=null,compassHeading=null,compassOn=false,follow=true,firstFix=true,curNext=null,prevNext=null,wakeLock=null;
@@ -1107,20 +1549,82 @@ var accCircle=null,meMarker=null;
 var sheet=$('#sheet');
 function sheetH(){return sheet.offsetHeight||260}
 var SAT=(function(){var d=document.createElement('div');d.style.cssText='position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden';document.body.appendChild(d);var h=d.offsetHeight;d.remove();return h})();
-var markers={};
+var markers={},NUDGE={};
+/* where pins overlap, which stays on top (zIndexOffset): the next stop, then the base (★/H, the walk's reference point, as in
+   WP1), the other stops, detours, places to eat; done stops and detours sink below the ones still to do */
+function pinRank(s){return s.id===curNext?1000:isBase(s)?600:s.role==='stop'?(S.visited[s.id]?350:500):s.role==='extra'?(S.visited[s.id]?250:300):200}
 function pinIcon(s){
-  var cls='pin'+(s.opt?' opt':'')+(isBase(s)?' home':'')+(S.visited[s.id]?' done':'')+(s.id===curNext?' next':'');
-  return L.divIcon({className:'pin-wrap',html:'<div class="'+cls+'">'+(S.visited[s.id]?'✓':s.n)+'</div>',iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-14]});
+  var cls='pin'+(s.opt?' opt':'')+(isBase(s)?' home':'')+(S.visited[s.id]?' done':'')+(s.id===curNext?' next':''),o=NUDGE[s.id]||[0,0];
+  return L.divIcon({className:'pin-wrap',html:'<div class="'+cls+'">'+(S.visited[s.id]?'✓':s.n)+'</div>',iconSize:[30,30],iconAnchor:[15-o[0],15-o[1]],popupAnchor:[o[0],o[1]-14]});
 }
+/* At overview zooms a place to eat, a detour or the base can land almost exactly under a stop (Chayan Yuese is 35 m from
+   Nanmenkou, 4 px at z13). Such a pin is nudged the shortest way (at most 24 px) to where its glyph clears every stop and the
+   nudged pins ranked above it, so both stay visible and tappable; in a crowd it takes the clearest spot within that reach.
+   Stops and the next pin never move, and nothing moves once the pins are apart (about z17 here). Returns the pins whose
+   nudge changed. */
+function nudgePins(){
+  if(!map._loaded)return[];
+  var z=map.getZoom(),placed=[],moved=[];
+  function clear(q){var m=1e9;placed.forEach(function(a){m=Math.min(m,q.distanceTo(a.q)-a.need)});return m}/* >=0: clear of all */
+  PINNED.map(function(s,i){var k=pinRank(s);return{s:s,k:k,i:i,fix:k===1000||s.role==='stop'}})
+    .sort(function(a,b){return b.fix-a.fix||b.k-a.k||a.i-b.i}).forEach(function(o){/* the fixed pins first, then by rank */
+    var s=o.s,pt=map.project([s.lat,s.lng],z),off=[0,0],sc=clear(pt);
+    if(!o.fix&&sc<0){
+      var near=null,dn=1e9;placed.forEach(function(a){var d=pt.distanceTo(a.q)-a.need;if(d<dn){dn=d;near=a}});
+      var d0=pt.subtract(near.q),a0=d0.x||d0.y?Math.atan2(d0.y,d0.x):0,best=null,bs=sc+4;/* a fallback must clear 4 px more */
+      search:for(var r=4;r<=24;r+=4)for(var k=0;k<16;k++){/* rings outward; in each, start by leaning away from the nearest pin */
+        var t=a0+(k%2?1:-1)*Math.ceil(k/2)*Math.PI/8,c=L.point(pt.x+Math.cos(t)*r,pt.y+Math.sin(t)*r),cs=clear(c);
+        if(cs>=0){best=c;break search}
+        if(cs>bs){bs=cs;best=c}
+      }
+      if(best){off=[Math.round(best.x-pt.x),Math.round(best.y-pt.y)];pt=pt.add(L.point(off[0],off[1]))}
+    }
+    placed.push({q:pt,need:o.k===1000?26:20});/* centre gap that keeps a lower pin's glyph clear of this disc (and of the next pin's halo) */
+    var was=NUDGE[s.id]||[0,0];
+    if(was[0]!==off[0]||was[1]!==off[1]){if(off[0]||off[1])NUDGE[s.id]=off;else delete NUDGE[s.id];moved.push(s)}
+  });
+  return moved;
+}
+/* ---------- open/closing pill, price and late badges (rows, popups, next card) ---------- */
+/* the minute you would get there: now plus the walk from where you are (now when there is no fix yet) */
+function arriveAt(s,now){return now+(me&&s?walkMin(dist(me,s)):0)}
+function ohText(s,o,compact){var t=compact&&o.short||o.text;/* compact: the next card, one line; the tonight line gives the countdown */
+  return s.hoursFor?s.hoursFor+': '+t.charAt(0).toLowerCase()+t.slice(1):t}
+function ohHtml(s,at,now,o){o=o||openState(s,at,now);return o.s==='unknown'?'':'<span class="oh" data-s="'+o.s+'">'+esc(ohText(s,o))+'</span>'}
+/* the price badge text ("¥¥ · ~¥70 at the window", "Free · book ahead"), or '' */
+function priceText(s){
+  var pr=s.price;if(!pr||typeof pr!=='object')return '';
+  var sym=pr.lvl===0?'Free':pr.lvl>=1&&pr.lvl<=4?'¥¥¥¥'.slice(0,pr.lvl):'',tx=pr.text||'';
+  if(sym==='Free'&&/^\W*free\b/i.test(tx))sym='';
+  return sym&&tx?sym+' · '+tx:sym||tx;
+}
+/* the symbol ("¥¥", "Free") and the rest are separate spans, so a compact popup can show the symbol alone */
+function priceHtml(s){
+  var t=priceText(s);if(!t)return '';
+  var m=/^(Free\b|¥{1,4}(?= · ))([\s\S]+)$/.exec(t);
+  return '<span class="badge price">'+(m?'<span class="sym">'+esc(m[1])+'</span><span class="ptx">'+esc(m[2])+'</span>':esc(t))+'</span>';
+}
+function pillsHtml(s,at,now){
+  var o=openState(s,at,now),late=lateTonight(s,now);
+  /* "Open late" says nothing new when the pill already shows a close at 23:00 or later (a compact popup drops it) */
+  var cl=late&&(o.s==='open'||o.s==='soon')&&!o.lastHM&&o.close?hmMin(o.close):NaN,red=cl>=1380||cl<300;
+  return ohHtml(s,at,now,o)+priceHtml(s)+(late?'<span class="badge late'+(red?' red':'')+'">Open late</span>':'')+
+    (s.conf==='low'?'<span class="badge unv">Unverified</span>':'')+(S.skip[s.id]&&!S.visited[s.id]?'<span class="badge skip">Skipped</span>':'');
+}
+function hrsHtml(s){return(s.hoursText?'<div class="hrs">'+esc(s.hoursText)+'</div>':'')+(s.note?'<div class="hrs">'+esc(s.note)+'</div>':'')}
 function popupHtml(s){
-  var d=me?'<div class="pop-d">'+fmtD(dist(me,s))+' away, about '+walkMin(dist(me,s))+' min</div>':'';
-  var visit=isBase(s)?'':'<button class="chip" data-act="visit" data-id="'+s.id+'">'+(S.visited[s.id]?'Undo':'Done')+'</button>';
-  return '<div class="pop"><strong>'+s.name+'</strong><div class="zh">'+s.zh+'</div><p>'+s.blurb+'</p>'+d+
+  var now=cst(),dd=me?dist(me,s):null;
+  var d=me?'<div class="pop-d">'+fmtD(dd)+' away, about '+walkMin(dd)+' min</div>':'';
+  var visit=isBase(s)||s.role==='near'?'':'<button class="chip" data-act="visit" data-id="'+s.id+'">'+(S.visited[s.id]?'Undo':'Done')+'</button>';
+  var pt=s.price&&typeof s.price==='object'&&s.price.text||'';/* .ptxt: the price in words, shown in the body only when the pill row is compact */
+  return '<div class="pop"><strong>'+esc(s.name)+'</strong><div class="zh">'+esc(s.zh)+'</div><div class="pills">'+pillsHtml(s,arriveAt(s,now),now)+'</div>'+
+    '<div class="pop-body">'+(pt?'<div class="ptxt">'+esc(pt)+'</div>':'')+hrsHtml(s)+(s.blurb?'<p>'+esc(s.blurb)+'</p>':'')+'</div>'+d+
     '<div class="acts"><button class="chip" data-act="route" data-id="'+s.id+'">Route</button><button class="chip" data-act="card" data-id="'+s.id+'">Driver card</button>'+visit+'</div></div>';
 }
+function popOpts(){return{maxWidth:Math.min(270,innerWidth-110),autoPanPaddingTopLeft:[10,70+SAT],autoPanPaddingBottomRight:[66,sheetH()+10]}}
 PINNED.forEach(function(s){
-  markers[s.id]=L.marker([s.lat,s.lng],{icon:pinIcon(s),title:s.name,riseOnHover:true})
-    .bindPopup(function(){return popupHtml(s)},{maxWidth:Math.min(270,innerWidth-110),autoPanPaddingTopLeft:[10,70+SAT],autoPanPaddingBottomRight:[66,sheetH()+10]})
+  markers[s.id]=L.marker([s.lat,s.lng],{icon:pinIcon(s),title:s.name,riseOnHover:true,zIndexOffset:pinRank(s)})
+    .bindPopup(function(){return popupHtml(s)},popOpts())
     .addTo(map);
 });
 /* keep popups clear of the FAB column, of whichever bottom panel is showing right now and of a toast */
@@ -1133,10 +1637,29 @@ map.on('popupopen',function(e){
   /* on short phones a long blurb would push the chips under the sheet, so the popup scrolls instead
      (48 = content margins 26 + wrapper border 2 + tip 20) */
   o.maxHeight=Math.max(120,innerHeight-bottom-10-top-48);
-  e.popup.update();
+  fitPop(e.popup);
 });
+/* A capped popup keeps its name, pills, distance and chips whole and scrolls only the body (hours, blurb). When those do not
+   fit the cap, it sheds, in this order: the price words and an "Open late" the pill already says (pop-c; the body shows the
+   price), then the second line of the name and some spacing (pop-t), then the price and "Open late" badges (pop-p; the
+   open/closed pill, "Unverified" and "Skipped" always stay), then the distance line (pop-x, a last resort). A body left too
+   short to read (< 32 px) is dropped (pop-nb): the list row has it all. The classes sit on Leaflet's content node, which
+   survives update() re-rendering the content. A capped popup takes its full width: Leaflet measures the width before it
+   resets the height, and a capped flex column would size the chips row too narrow. */
+var POPFIT=['pop-c','pop-t','pop-p','pop-x'];
+function fitPop(pp){
+  var c=pp._contentNode;if(!c)return;
+  c.classList.remove('pop-nb');POPFIT.forEach(function(k){c.classList.remove(k)});pp.options.minWidth=50;pp.update();
+  function capped(){return c.classList.contains('leaflet-popup-scrolled')}
+  if(capped()){pp.options.minWidth=pp.options.maxWidth;pp.update()}
+  function over(){var a=c.querySelector('.acts');return!!a&&a.getBoundingClientRect().bottom>c.getBoundingClientRect().bottom+0.5}
+  for(var i=0;i<POPFIT.length&&capped()&&over();i++){c.classList.add(POPFIT[i]);pp.update()}
+  var b=c.querySelector('.pop-body');
+  if(capped()&&b&&b.getBoundingClientRect().height<32){c.classList.add('pop-nb');pp.update()}
+}
 map.on('popupclose',function(e){if(openPop===e.popup)openPop=null});
-function refreshPins(){PINNED.forEach(function(s){markers[s.id].setIcon(pinIcon(s))})}
+function refreshPins(){nudgePins();PINNED.forEach(function(s){markers[s.id].setIcon(pinIcon(s)).setZIndexOffset(pinRank(s))})}
+map.on('zoomend',function(){nudgePins().forEach(function(s){markers[s.id].setIcon(pinIcon(s))})});
 
 function drawTrail(){
   trailLayer.clearLayers();
@@ -1211,8 +1734,9 @@ function updateStats(){
 }
 
 function ui(){
-  var next=null;for(var i=0;i<STOPS.length;i++){if(!S.visited[STOPS[i].id]){next=STOPS[i];break}}
+  var next=null;for(var i=0;i<STOPS.length;i++){if(!S.visited[STOPS[i].id]&&!S.skip[STOPS[i].id]){next=STOPS[i];break}}
   if(!next)next=HOTEL;curNext=next.id;
+  var now=cst();
   var numEl=$('#nextNum');numEl.textContent=next.n;numEl.className='num'+(next===HOTEL?' home':'');
   $('#nextName').textContent=next===HOTEL?HOTEL.back:next.name;
   $('#nextZh').textContent=next.zh;
@@ -1229,11 +1753,18 @@ function ui(){
     $('#nextDir').textContent='';
     $('#btnHotel').textContent='Hotel';
   }
-  ALL.forEach(function(s){
+  /* open/closed at the time you would get there */
+  var oh=$('#nextOh'),os=next===HOTEL?{s:'unknown'}:openState(next,arriveAt(next,now),now);
+  oh.hidden=os.s==='unknown';if(!oh.hidden){oh.setAttribute('data-s',os.s);oh.textContent=ohText(next,os,true)}
+  ALL.concat(NEAR).forEach(function(s){
     var row=document.getElementById('row-'+s.id);if(!row)return;
-    row.classList.toggle('done',!!S.visited[s.id]);
-    row.querySelector('.num').textContent=S.visited[s.id]?'✓':s.n;
-    row.querySelector('[data-act="visit"]').textContent=S.visited[s.id]?'Undo':'Done';
+    if(s.role!=='near'){
+      row.classList.toggle('done',!!S.visited[s.id]);
+      row.querySelector('.num').textContent=S.visited[s.id]?'✓':s.n;
+      row.querySelector('[data-act="visit"]').textContent=S.visited[s.id]?'Undo':'Done';
+      var us=row.querySelector('[data-act="unskip"]');if(us)us.hidden=!S.skip[s.id]||!!S.visited[s.id];
+    }
+    var ph=pillsHtml(s,arriveAt(s,now),now);if(row._ph!==ph){row._ph=ph;row.querySelector('.pills').innerHTML=ph}
     var dEl=row.querySelector('.d');
     if(me){var dd=dist(me,s);dEl.innerHTML=fmtD(dd)+'<small>'+walkMin(dd)+' min</small>'}else dEl.textContent='–';
   });
@@ -1242,19 +1773,59 @@ function ui(){
   tb.textContent=watchId!=null?'Stop tracking':resume?'Resume':'Start tracking';
   if(resume)tb.setAttribute('aria-label','Resume tracking');else tb.removeAttribute('aria-label');
   tb.classList.toggle('on',watchId!=null);
-  $('#hint').textContent=watchId!=null?'Keep this page open while you walk. Phones pause web GPS when the screen locks.':'Tap Start tracking, then allow location access. Your track and visited stops are saved on this phone.';
+  setHint(tonightHint(now));
   $('#btnLocate').setAttribute('aria-pressed',String(watchId!=null&&follow));
   if(prevNext!==curNext){prevNext=curNext;refreshPins()}
   updateStats();updateArrow();
 }
 
+/* ---------- the tonight line: warn before you walk to something closed ----------
+   (a) the next stop is closed when you would get there (Skip); (b) an unvisited stop closes (or stops letting people in) within
+   the hour and has no later session today, earliest closing first, ties in loop order; (c) after 22:45, the last metro, when transport places exist; otherwise the usual advice. */
+function tonightHint(now){
+  var t=now%1440,next=BY[curNext],o,nm;
+  if(next&&next!==HOTEL&&!next.hoursFor){/* hoursFor: the hours cover only part of it (a riverside pavilion is still worth the walk) */
+    o=openState(next,arriveAt(next,now),now);nm='<b>'+esc(next.short||next.name)+'</b>';
+    if(o.s==='closed')return{k:'warn',html:'<span>'+(o.beforeArrival?nm+' closes '+o.beforeArrival+', before you get there':o.lastPassed?nm+': last entry was '+o.prev+(o.opens?', reopens '+o.opens:''):
+      o.opens?nm+' is closed until '+o.opens:o.prev?nm+' closed at '+o.prev:o.dayOff?nm+' is closed today':nm+' is closed now')+
+      '</span><button class="chip" data-act="skip" data-id="'+next.id+'">Skip</button>'};
+  }
+  var best=null;
+  STOPS.forEach(function(s){
+    if(S.visited[s.id]||S.skip[s.id]||!s._h)return;
+    var q=openState(s,now,now);if((q.s!=='open'&&q.s!=='soon')||q.deadlineIn>60||q.reopens)return;/* not the last chance tonight */
+    if(me&&openState(s,arriveAt(s,now),now).s==='closed')return;
+    if(!best||q.closeIn<best.q.closeIn)best={s:s,q:q};
+  });
+  if(best){
+    var b=best.s,q=best.q,w=me?', '+walkMin(dist(me,b))+' min walk':'';
+    nm='<b>'+esc(b.short||b.name)+'</b>'+(b.hoursFor?' ('+esc(b.hoursFor.toLowerCase())+')':'');
+    return{k:'warn',html:'<span>'+nm+(q.lastHM?' last entry '+q.lastHM+' (in '+q.deadlineIn+' min'+w+')':' closes '+q.close+' (in '+q.closeIn+' min'+w+')')+
+      '</span><button class="chip" data-act="route" data-id="'+b.id+'">Route</button>'};
+  }
+  if(t>=22*60+45||t<60){
+    var from=me||HOTEL,tr=null,td=1e9;
+    Object.keys(P).forEach(function(id){var p=P[id];if(p.cat!=='transport'||!p.last)return;var d=dist(from,p);if(d<td){td=d;tr=p}});
+    if(tr)return{k:'info',html:'Last metro ~'+esc(tr.last)+' from '+esc(tr.short||tr.name)+(me?' · '+walkMin(td)+' min walk':'')};
+  }
+  return null;
+}
+function setHint(h){
+  var el=$('#hint'),html=h?h.html:esc(watchId!=null?'Keep this page open while you walk. Phones pause web GPS when the screen locks.':'Tap Start tracking, then allow location access. Your track and visited stops are saved on this phone.');
+  if(el._h!==html){el._h=html;el.innerHTML=html}
+  el.classList.toggle('warn',!!(h&&h.k==='warn'));
+}
+
 /* ---------- list ---------- */
 function rowHtml(s){
-  return '<article class="row'+(s.opt?' opt':'')+'" id="row-'+s.id+'"><span class="num">'+s.n+'</span><div><h3>'+s.name+'</h3><div class="zh">'+s.zh+'</div><p>'+s.blurb+'</p>'+
-  '<div class="acts"><button class="chip" data-act="fly" data-id="'+s.id+'">Map</button><button class="chip" data-act="route" data-id="'+s.id+'">Route</button><button class="chip" data-act="card" data-id="'+s.id+'">Driver card</button><button class="chip" data-act="visit" data-id="'+s.id+'">Done</button></div></div><div class="d">–</div></article>';
+  return '<article class="row'+(s.opt?' opt':'')+'" id="row-'+s.id+'"><span class="num">'+esc(s.n)+'</span><div><h3>'+esc(s.name)+'</h3><div class="zh">'+esc(s.zh)+'</div><div class="pills"></div>'+hrsHtml(s)+(s.blurb?'<p>'+esc(s.blurb)+'</p>':'')+
+  '<div class="acts"><button class="chip" data-act="fly" data-id="'+s.id+'">Map</button><button class="chip" data-act="route" data-id="'+s.id+'">Route</button><button class="chip" data-act="card" data-id="'+s.id+'">Driver card</button>'+
+  (s.role==='near'?'':'<button class="chip" data-act="visit" data-id="'+s.id+'">Done</button>')+(s.role==='stop'?'<button class="chip" data-act="unskip" data-id="'+s.id+'" hidden>Unskip</button>':'')+'</div></div><div class="d">–</div></article>';
 }
 $('#list').innerHTML=STOPS.map(rowHtml).join('')+'<h4 class="group">Worth a detour</h4>'+EXTRAS.map(rowHtml).join('')+(EATS.length?'<h4 class="group">Places to eat</h4>'+EATS.map(rowHtml).join(''):'')+
-  '<p class="note">The dotted gold line shows the suggested order, not the street route. Tap Route for walking directions from where you are. Long-press anywhere on the map to route from or to that spot. Stops tick themselves off when you get within about 45 m.</p>';
+  (NEAR.length?'<h4 class="group">More nearby</h4>'+NEAR.map(rowHtml).join(''):'')+
+  '<p class="note">The dotted gold line shows the suggested order, not the street route. Tap Route for walking directions from where you are. Long-press anywhere on the map to route from or to that spot. Stops tick themselves off when you get within about 45 m.</p>'+
+  '<p class="note">Hours checked Sep 2026; holidays may differ.</p>';
 
 function toggleList(force){
   var list=$('#list'),open=force!=null?force:list.hidden;
@@ -1265,16 +1836,23 @@ function toggleList(force){
 
 /* ---------- actions ---------- */
 function toggleVisit(id){
-  if(!id||id==='hotel'||id==='home')return;
-  var s=BY[id];if(!s)return;
+  if(!id||isBase(BY[id]))return;
+  var s=BY[id];if(!s||s.role==='near')return;
   if(S.visited[id])delete S.visited[id];else S.visited[id]=Date.now();
   map.closePopup();refreshPins();ui();save();
   toast((S.visited[id]?'Marked ':'Unmarked ')+(s.short||s.name)+(S.visited[id]?' done':''),'Undo',function(){toggleVisit(id)});
 }
+function skipStop(id,on){
+  var s=BY[id];if(!s||s.role!=='stop')return;
+  if(on)S.skip[id]=1;else delete S.skip[id];
+  save();ui();
+  if(on)toast('Skipped '+(s.short||s.name),'Undo',function(){skipStop(id,false)});
+}
 function flyTo(id){
   var s=BY[id];if(!s)return;setFollow(false);toggleList(false);
   if(RM)map.setView([s.lat,s.lng],17);else map.flyTo([s.lat,s.lng],17,{duration:.6});
-  setTimeout(function(){markers[id].openPopup()},RM?0:650);ui();
+  /* "More nearby" places have no pin yet (WP6 adds them with the filters): show the same popup on its own */
+  setTimeout(function(){if(markers[id])markers[id].openPopup();else L.popup(popOpts()).setLatLng([s.lat,s.lng]).setContent(popupHtml(s)).openOn(map)},RM?0:650);ui();
 }
 function showCard(id){
   var s=BY[id];if(!s)return;
@@ -1295,6 +1873,8 @@ document.addEventListener('click',function(e){
   if(act==='route'){map.closePopup();toggleList(false);openRoute(placeEnd(BY[id]),geoOK()?{type:'me'}:null);return}
   if(act==='dirfrom'||act==='dirto'){map.closePopup();var pin={type:'place',lat:+el.getAttribute('data-lat'),lng:+el.getAttribute('data-lng'),label:'Pinned spot'};if(act==='dirfrom')openRoute(null,pin);else openRoute(pin);return}
   if(act==='visit')toggleVisit(id);
+  else if(act==='skip')skipStop(id,true);
+  else if(act==='unskip')skipStop(id,false);
   else if(act==='fly')flyTo(id);
   else if(act==='card')showCard(id);
   else if(act==='list')toggleList();
@@ -1381,8 +1961,10 @@ $('#btnLocate').addEventListener('click',function(){
 });
 map.on('dragstart',function(){if(follow){setFollow(false);ui()}});
 
+var hoursMin=Math.floor(Date.now()/60000);
 setInterval(function(){
   if(sessionAt){var now=Date.now();S.elapsed+=now-sessionAt;sessionAt=now;updateStats()}
+  var m=Math.floor(Date.now()/60000);if(m!==hoursMin){hoursMin=m;ui()}/* open/closing pills and the tonight line, once a minute */
 },1000);
 setInterval(function(){if(watchId!=null)save()},15000);
 
@@ -1457,7 +2039,7 @@ $('#btnGpx').addEventListener('click',function(){
 });
 $('#btnReset').addEventListener('click',function(){
   if(!confirm('Clear your track, tracking time and done stops?'))return;
-  S=Object.assign({},DEF,carry(),{visited:{},trail:[]});
+  S=Object.assign({},DEF,carry(),{visited:{},trail:[],skip:{}});
   if(watchId!=null){S.trail.push([]);sessionAt=Date.now()}
   liveLine=null;drawTrail();refreshPins();ui();save();closeMenu();toast('Walk reset');
 });
@@ -1576,8 +2158,8 @@ function drawRoute(fit){
   var r=NAV.route;
   if(r){L.polyline(r.disp,{className:'nav-case',interactive:false}).addTo(NAV.layer);L.polyline(r.disp,{className:'nav',interactive:false}).addTo(NAV.layer)}
   var f=endLL(NAV.from),t=endLL(NAV.to);
-  if(f&&NAV.from.type!=='me'&&!NAV.from.id)endMarker(f,'a').addTo(NAV.layer);
-  if(t&&NAV.to.type!=='me'&&!NAV.to.id)endMarker(t,'b').addTo(NAV.layer);
+  if(f&&NAV.from.type!=='me'&&!(NAV.from.id&&markers[NAV.from.id]))endMarker(f,'a').addTo(NAV.layer);
+  if(t&&NAV.to.type!=='me'&&!(NAV.to.id&&markers[NAV.to.id]))endMarker(t,'b').addTo(NAV.layer);
   if(fit&&r){setFollow(false);map.fitBounds(L.latLngBounds(r.disp),{paddingTopLeft:[24,Math.max(70+SAT,toastTop()+20)],paddingBottomRight:[70,dirH()+16],maxZoom:18,animate:!RM})}
 }
 function renderDir(){
@@ -1638,8 +2220,8 @@ function openPicker(which){
   var h='<button class="opt" data-pick="me"'+(geoOK()?'':' disabled')+'><span class="num ic-me">◎</span><span>My location'+(geoOK()?'':'<small>Needs the page opened from an https link</small>')+'</span></button>'+
     '<button class="opt" data-pick="map"><span class="num ic-plain">✥</span><span>Pick on the map<small>Tap any spot</small></span></button>'+
     '<div class="opt-group">Your stops</div>';
-  (DAY!=='today'?[HOME]:[]).concat([HOTEL],STOPS,EXTRAS,EATS).forEach(function(s){
-    h+='<button class="opt" data-pick="place" data-id="'+s.id+'"><span class="num'+(isBase(s)?' home':'')+(s.opt?' optn':'')+'">'+s.n+'</span><span>'+(s===HOME?'Your hotel':s.name)+'<small>'+s.zh+'</small></span></button>';
+  (HOME!==HOTEL?[HOME]:[]).concat([HOTEL],STOPS,EXTRAS,EATS).forEach(function(s){
+    h+='<button class="opt" data-pick="place" data-id="'+s.id+'"><span class="num'+(isBase(s)?' home':'')+(s.opt?' optn':'')+'">'+s.n+'</span><span>'+(s===HOME&&HOME!==HOTEL?'Your hotel':s.name)+'<small>'+s.zh+'</small></span></button>';
   });
   $('#pickOpts').innerHTML=h;
   $('#picker').hidden=false;
