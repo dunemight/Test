@@ -688,16 +688,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --shadow:0 8px 26px rgba(0,0,0,.5);
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html,body{height:100%;margin:0;overscroll-behavior:none}
 body{background:var(--bg);color:var(--ink);font:15px/1.4 var(--font);-webkit-font-smoothing:antialiased;overflow:hidden;-webkit-tap-highlight-color:transparent}
 button,a{font:inherit;color:inherit}
+button,a,.sheet,.topbar,.dir,.picker{touch-action:manipulation}
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 [hidden]{display:none!important}
 
 #map{position:fixed;inset:0;background:var(--bg)}
 .leaflet-container{background:var(--bg);font:inherit}
 .night-map .leaflet-tile-pane{filter:invert(.92) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.75)}
-.leaflet-control-attribution{font-size:10px}
+.leaflet-control-attribution{font-size:10px;opacity:.8}
+.leaflet-top.leaflet-left{top:calc(env(safe-area-inset-top,0px) + 56px)}
 
 /* top bar */
 .topbar{position:fixed;z-index:1000;top:calc(env(safe-area-inset-top,0px) + 10px);left:10px;right:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;pointer-events:none}
@@ -717,7 +719,11 @@ button,a{font:inherit;color:inherit}
 .banner{position:fixed;z-index:1001;top:calc(env(safe-area-inset-top,0px) + 60px);left:10px;right:66px;padding:11px 13px;border-radius:14px;background:var(--panel);box-shadow:var(--shadow);font-size:13.5px;line-height:1.45;border-left:5px solid var(--gold)}
 .banner[data-k="bad"]{border-left-color:var(--bad)}
 .banner button{margin-left:6px;border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;padding:0}
-.toast{position:fixed;z-index:1600;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);transform:translateX(-50%);padding:10px 16px;border-radius:999px;background:var(--jade);color:#fff;font-weight:650;box-shadow:var(--shadow);white-space:nowrap;max-width:calc(100vw - 24px);overflow:hidden;text-overflow:ellipsis}
+.toast{position:fixed;z-index:1600;left:50%;top:auto;bottom:calc(var(--sheet-h,400px) + 10px);transform:translateX(-50%);padding:10px 16px;border-radius:16px;background:var(--jade);color:#fff;font-weight:650;box-shadow:var(--shadow);white-space:normal;text-align:center;pointer-events:none;width:max-content;max-width:calc(100vw - 24px);display:flex;align-items:center;justify-content:center}
+.toast.narrow{left:10px;transform:none;max-width:calc(100vw - 76px)}
+/* while a popup or the route panel is open it docks over the GPS pill, a band that popups and route fits keep clear of */
+.toast.top{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto;left:10px;transform:none;max-width:calc(100vw - 76px)}
+.toast button{pointer-events:auto;margin-left:10px;min-height:36px;border:0;border-radius:10px;padding:0 12px;background:rgba(255,255,255,.2);color:inherit;font-weight:700;cursor:pointer;flex:none}
 
 /* settings */
 .menu{position:fixed;z-index:1500;top:calc(env(safe-area-inset-top,0px) + 10px);right:66px;width:min(310px,calc(100vw - 86px));background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:6px 14px 12px}
@@ -728,16 +734,21 @@ button,a{font:inherit;color:inherit}
 .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:none}
 .seg button{border:0;background:none;padding:6px 12px;cursor:pointer;font-weight:600;font-size:13px}
 .seg button[aria-pressed="true"]{background:var(--gold);color:var(--gold-ink)}
-.menu-acts{display:flex;gap:8px;margin-top:12px}
+.menu-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.menu-acts .btn{flex:1 1 auto}
 .daybar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;font-size:13.5px;color:var(--muted);font-weight:650}
 .daybar .seg{min-width:0}
 .daybar .seg button{color:var(--ink);white-space:nowrap}
 
 /* bottom sheet */
-.sheet{position:fixed;z-index:1000;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;background:var(--panel);border-radius:24px 24px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.22);padding:0 16px calc(env(safe-area-inset-bottom,0px) + 12px)}
+.sheet{position:fixed;z-index:1000;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;background:var(--panel);border-radius:24px 24px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.22);padding:0 16px calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;flex-direction:column;max-height:calc(100vh - env(safe-area-inset-top,0px) - 228px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 228px)}
+/* 228 = bottom of the FAB column (10 + 4x46 + 3x8 = 218) + 10, so the open list never covers Compass/Settings */
+.sheet>*{flex:none}
+.sheet .list{flex:1 1 auto;min-height:96px;max-height:none}
+.sheet.list-open .stats,.sheet.list-open .hint{display:none}
 .handle{display:block;width:100%;height:24px;border:0;background:none;cursor:pointer;padding:0}
 .handle::before{content:"";display:block;width:42px;height:5px;border-radius:3px;background:var(--line);margin:9px auto 0}
-.next{display:grid;grid-template-columns:70px 1fr auto;gap:12px;align-items:center}
+.sheet .next{display:grid;grid-template-columns:70px 1fr auto;gap:12px;align-items:center}
 .compass{width:70px;height:70px;border-radius:50%;background:var(--panel-2);display:grid;place-items:center;position:relative;border:1px solid var(--line)}
 .compass .n{position:absolute;top:4px;left:0;right:0;text-align:center;font-size:10px;font-weight:700;color:var(--muted)}
 .compass svg{width:38px;height:38px;color:var(--gold);transition:transform .3s ease-out}
@@ -755,7 +766,8 @@ button,a{font:inherit;color:inherit}
 .stat b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
 .stat span{font-size:12px;color:var(--muted)}
 .controls{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,.9fr);gap:8px}
-.controls .btn{padding:0 8px;font-size:14px;overflow:hidden;text-overflow:ellipsis}
+.controls .btn{padding:0 8px;font-size:14px;overflow:hidden;text-overflow:ellipsis;flex-direction:column;line-height:1.1}
+.controls .btn small{font-size:11.5px;font-weight:600;opacity:.8}
 .btn{min-height:46px;padding:0 14px;border-radius:13px;border:1px solid var(--line);background:var(--panel-2);font-weight:650;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}
 .btn.small{min-height:36px;padding:0 12px;font-size:13.5px;border-radius:10px}
 .btn.primary{background:var(--gold);color:var(--gold-ink);border-color:transparent}
@@ -796,6 +808,11 @@ path.acc{fill:var(--me);fill-opacity:.12;stroke:var(--me);stroke-opacity:.4;stro
 .pop strong{font-size:15.5px}
 .pop p{margin:6px 0;color:var(--muted);font-size:13px}
 .pop .pop-d{font-weight:700;margin:6px 0 8px;font-variant-numeric:tabular-nums}
+/* when Leaflet caps the popup height (short phones), only the blurb scrolls: name, distance and the chips stay visible */
+.leaflet-popup-content.leaflet-popup-scrolled{overflow:hidden}
+.leaflet-popup-scrolled .pop{height:100%;display:flex;flex-direction:column}
+.leaflet-popup-scrolled .pop>*{flex:none}
+.leaflet-popup-scrolled .pop>p{flex:0 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding-bottom:12px;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 14px),transparent)}
 
 /* driver card */
 .overlay{position:fixed;inset:0;z-index:2000;background:rgba(5,8,16,.75);display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 20px) 18px calc(env(safe-area-inset-bottom,0px) + 20px)}
@@ -809,7 +826,7 @@ path.acc{fill:var(--me);fill-opacity:.12;stroke:var(--me);stroke-opacity:.4;stro
 .dcard .btn.primary{background:#b27a14;color:#fff}
 
 /* walking route */
-.dir{position:fixed;z-index:1100;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;max-height:58vh;display:flex;flex-direction:column;background:var(--panel);border-radius:24px 24px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.25);padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 12px)}
+.dir{position:fixed;z-index:1100;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;max-height:60vh;max-height:60dvh;display:flex;flex-direction:column;background:var(--panel);border-radius:24px 24px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.25);padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 12px)}
 .dir-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .dir-head h2{margin:0;font-size:18px;flex:1}
 .iconbtn{width:42px;height:42px;flex:none;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);display:grid;place-items:center;cursor:pointer;padding:0}
@@ -822,22 +839,26 @@ path.acc{fill:var(--me);fill-opacity:.12;stroke:var(--me);stroke-opacity:.4;stro
 .field span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .field span.ph{color:var(--muted);font-weight:500}
 .dir-msg{color:var(--muted);font-size:13.5px;line-height:1.45;margin:10px 2px 0}
-.summary{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:10px;row-gap:6px;margin:12px 0 2px;font-variant-numeric:tabular-nums}
-.summary b{font-size:20px}
+.summary{display:flex;align-items:baseline;flex-wrap:nowrap;column-gap:10px;row-gap:6px;margin:12px 0 2px;font-variant-numeric:tabular-nums}
+.summary b{font-size:20px;white-space:nowrap;flex:none}
 .summary span{color:var(--muted)}
-.summary .chip{margin-left:auto}
+.summary .chip{margin-left:auto;flex:none}
+.summary>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nav-now{display:flex;align-items:center;gap:12px;margin:10px 0 2px;padding:11px 14px;border-radius:14px;background:var(--me);color:#fff;font-weight:650;line-height:1.3}
 .nav-now .in{font-size:22px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
 .nav-now.off{background:var(--bad)}
-.steps{flex:1 1 auto;min-height:0;overflow:auto;margin:8px -16px 0;padding:0 16px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.steps{flex:1 1 auto;min-height:120px;overflow:auto;margin:8px -16px 0;padding:0 16px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .step{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:start;width:100%;padding:11px 0;border:0;border-top:1px solid var(--line);background:none;text-align:left;cursor:pointer;line-height:1.4}
 .step .ic{width:30px;height:30px;border-radius:9px;background:var(--panel-2);display:grid;place-items:center;font-size:16px;font-weight:700}
 .step.cur .ic{background:var(--me);color:#fff}
 .step.cur{font-weight:650}
 .step .sd{color:var(--muted);font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums;padding-top:5px}
-.dir.compact .ends,.dir.compact .steps{display:none}
+.steps:empty{min-height:0}
+.dir.compact .steps{display:none}
 .src{font-size:11.5px;color:var(--muted);margin:8px 2px 0}
-.dir.compact .src{display:none}
+.steps .src{margin:10px 0 4px}
+.dir.from-me #fromBtn,.dir.from-me #swapBtn{display:none}
+.dir.from-me .ends{grid-template-columns:1fr}
 path.nav{stroke:var(--me);stroke-width:7;stroke-opacity:.95;stroke-linecap:round;stroke-linejoin:round;fill:none}
 path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:round;stroke-linejoin:round;fill:none}
 .endpt{width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.45)}
@@ -848,9 +869,9 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
 .search{width:100%;min-height:50px;margin:12px 0 4px;padding:0 14px;border-radius:13px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:16px}
 .search::placeholder{color:var(--muted)}
 .opts{flex:1;overflow:auto;margin:0 -16px;padding:0 16px;overscroll-behavior:contain}
-.opt{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:8px 2px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;line-height:1.3}
-.opt:disabled{opacity:.5;cursor:default}
-.opt small{display:block;color:var(--muted);font-size:12.5px;font-weight:500;margin-top:2px}
+.opts .opt{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:8px 2px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;line-height:1.3}
+.opts .opt:disabled{opacity:.5;cursor:default}
+.opts .opt small{display:block;color:var(--muted);font-size:12.5px;font-weight:500;margin-top:2px}
 .opt-group{margin:16px 2px 2px;font-size:13px;color:var(--muted);font-weight:650}
 .num.optn{background:var(--panel);color:var(--gold);box-shadow:inset 0 0 0 2px var(--gold)}
 .num.ic-me{background:var(--me)}
@@ -928,7 +949,7 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
   </div>
   <div class="controls">
     <button class="btn primary" id="btnTrack">Start tracking</button>
-    <button class="btn" data-act="card" data-id="hotel" id="btnHotel">Hotel</button>
+    <button class="btn" data-act="card" data-id="home" id="btnHotel">Hotel</button>
     <button class="btn" data-act="list" id="btnList" aria-expanded="false" aria-controls="list">All stops</button>
   </div>
   <p class="hint" id="hint">Tap Start tracking, then allow location access.</p>
@@ -993,10 +1014,10 @@ var RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matc
 /* ---------- places (GCJ-02, the datum Chinese maps use) ---------- */
 var DAYS={
  today:{label:'Hotel loop',key:'changsha-night-walk-v1',base:{id:'hotel',n:'H',name:'Wyndham Grand Plaza Royale Furongguo',zh:'长沙芙蓉国温德姆至尊豪廷大酒店',lat:28.1865751,lng:112.9860048,tel:'+86 731 8868 8888',short:'Hotel',back:'Back to the hotel',blurb:'Your hotel, the start and end of the loop.'},eats:[],stops:[
- {id:'tianxin',n:1,name:'Tianxin Pavilion',zh:'天心阁',lat:28.183687,lng:112.981369,blurb:'A pavilion on a surviving stretch of the old city wall, lit up at night. The park around it is free; the paid top section (¥32) may be closed this late.'},
+ {id:'tianxin',n:1,name:'Tianxin Pavilion',zh:'天心阁',lat:28.183687,lng:112.981369,blurb:'A pavilion on the last surviving stretch of the old city wall, lit up at night. The park around it is free. The paid wall-and-pavilion area has an evening session (Tue–Sun about 18:00–22:00, last entry 21:30); night tickets cost more than day ones (about ¥58).'},
  {id:'huangxing',n:2,name:'Huangxing Walking Street',zh:'黄兴南路步行街',lat:28.186413,lng:112.976319,blurb:'The main neon pedestrian strip. Grab a Chayan Yuese (茶颜悦色) tea, or black stinky tofu if you still have room.'},
- {id:'dufu',n:3,name:'Du Fu Riverside Pavilion',zh:'杜甫江阁',lat:28.185192,lng:112.968851,blurb:'Golden pavilion on the Xiang River, facing Orange Isle. Entry is a small fee checked by ID, so bring your passport. The riverside path is free.'},
- {id:'wenheyou',n:4,name:'Super Wenheyou',zh:'超级文和友（海信广场）',lat:28.187097,lng:112.969727,blurb:'Retro 1980s Changsha food complex inside Hisense Plaza (海信广场), open until 2am. Free to wander; table queues can be long.'},
+ {id:'dufu',n:3,name:'Du Fu Riverside Pavilion',zh:'杜甫江阁',lat:28.185192,lng:112.968851,blurb:'Golden pavilion on the Xiang River, facing Orange Isle. Entry is a small fee checked by ID, so bring your passport. The riverside path is free. Floodlit about 19:00–22:30; the pavilion itself is open until 22:00.'},
+ {id:'wenheyou',n:4,name:'Super Wenheyou',zh:'超级文和友（海信广场）',lat:28.189043,lng:112.969744,blurb:'Retro 1980s Changsha food complex inside Hisense Plaza (海信广场), open until late (about 2–3am). Free to wander; table queues can be long.'},
  {id:'ifs',n:5,name:'Changsha IFS',zh:'长沙国金中心 IFS',lat:28.191892,lng:112.97693,blurb:'Upscale mall with giant art-toy sculptures on the rooftop. Malls here usually close around 10pm, so go earlier if it matters to you.'},
  {id:'jiefang',n:6,name:'Jiefang West Road',zh:'解放西路',lat:28.191095,lng:112.981611,blurb:'Changsha’s bar street. It gets busy late, so it works as the last stop before the hotel.'}
 ],extras:[
@@ -1006,31 +1027,39 @@ var DAYS={
  tomorrow:{label:'Huangxing Rd',key:'changsha-night-walk-v1-tomorrow',
   base:{id:'hotel',n:'★',name:'Huangxing Road Pedestrian Street',zh:'黄兴南路步行街',lat:28.186413,lng:112.976319,short:'Base',back:'Back to Huangxing Rd',blurb:'Your base: the main pedestrian shopping street. The loop starts and ends here.'},
   stops:[
- {id:'hx-nanmen',n:1,name:'Nanmenkou & the Huang Xing statue',zh:'南门口',lat:28.182875,lng:112.976225,blurb:'The south end of the street, where the old south city gate stood. The bronze statue of Huang Xing, the revolutionary the road is named after, is here, and the side streets are full of local snack stalls.'},
- {id:'hx-tianxin',n:2,name:'Tianxin Pavilion',zh:'天心阁',lat:28.183687,lng:112.981369,blurb:'A pavilion on the last surviving stretch of the old city wall, in a free park. The paid top section (about ¥32) has the best view back over the old town.'},
+ {id:'hx-nanmen',n:1,name:'Nanmenkou (old South Gate)',zh:'南门口',lat:28.182875,lng:112.976225,blurb:'The south end of the street, where the old south city gate stood. In the evening the snack stalls along Xihu Road (西湖路) sell sugar-oil baba (糖油粑粑), stinky tofu and skewers. The Huang Xing statue is at the other end, by IFS.'},
+ {id:'hx-tianxin',n:2,name:'Tianxin Pavilion',zh:'天心阁',lat:28.183687,lng:112.981369,blurb:'A pavilion on the last surviving stretch of the old city wall, lit up at night, in a free park. The paid wall-and-pavilion area has an evening session (Tue–Sun about 18:00–22:00, last entry 21:30; night tickets about ¥58) and the best view back over the old town.'},
  {id:'hx-hualong',n:3,name:'Hualongchi & Baiguoyuan lanes',zh:'化龙池 白果园',lat:28.187328,lng:112.977246,blurb:'Narrow old lanes just east of the main street, with small bars, cafés and old stone-framed houses.'},
- {id:'hx-ifs',n:4,name:'Changsha IFS rooftop',zh:'长沙国金中心 IFS',lat:28.191892,lng:112.97693,blurb:'Upscale mall at the north end of the street, known for the giant art-toy sculptures on its rooftop garden. Malls here usually close around 10pm.'},
- {id:'hx-jiayi',n:5,name:'Taiping Street & Jia Yi’s Former Residence',zh:'太平街 贾谊故居',lat:28.192639,lng:112.971847,blurb:'Restored old street of grey-brick shops and snack stalls. Halfway along is the former home of Jia Yi, a Han-dynasty scholar and poet, now a small courtyard museum.'},
- {id:'hx-dufu',n:6,name:'Du Fu Riverside Pavilion',zh:'杜甫江阁',lat:28.185192,lng:112.968851,blurb:'Golden pavilion on the Xiang River, facing Orange Isle. The riverside path is free and good at sunset; the pavilion itself has a small fee checked by ID, so bring your passport.'},
+ {id:'hx-ifs',n:4,name:'Changsha IFS rooftop',zh:'长沙国金中心 IFS',lat:28.191892,lng:112.97693,blurb:'Upscale mall at the north end of the street. The bronze Huang Xing statue, honouring the revolutionary the road is named after, stands at the street’s north entrance right beside it, a classic meeting point. Take the lifts to the L7 rooftop garden for the giant KAWS sculptures. The mall closes at 22:00, so get there by about 21:30.'},
+ {id:'hx-jiayi',n:5,name:'Taiping Old Street',zh:'太平街 贾谊故居',lat:28.193616,lng:112.971787,blurb:'Restored lane of grey-brick shops and snack stalls, lively until late. Jia Yi’s Former Residence (No. 28, near the south end) is a daytime-only museum and has been reported closed for renovation since May 2025, so expect to see it from outside.'},
+ {id:'hx-dufu',n:6,name:'Du Fu Riverside Pavilion',zh:'杜甫江阁',lat:28.185192,lng:112.968851,blurb:'Golden pavilion on the Xiang River, facing Orange Isle. The riverside path is free and good at sunset; the pavilion itself has a small fee checked by ID, so bring your passport. Floodlit about 19:00–22:30; the pavilion itself is open until 22:00.'},
  {id:'hx-wenmiao',n:7,name:'Xiwenmiaoping',zh:'西文庙坪',lat:28.184732,lng:112.971991,blurb:'A quiet old neighbourhood with a stone memorial archway left over from the city’s old Confucian school. A short step into pre-mall Changsha on the way back to the main street.'}
   ],
   extras:[
- {id:'hx-jiandu',n:'+',opt:true,name:'Changsha Bamboo Slips Museum',zh:'长沙简牍博物馆',lat:28.184904,lng:112.983172,blurb:'Museum of ancient bamboo writing slips dug up in central Changsha, next to Tianxin Pavilion. Daytime hours only and usually closed on Mondays; bring your passport.'},
+ {id:'hx-jiandu',n:'+',opt:true,name:'Changsha Bamboo Slips Museum',zh:'长沙简牍博物馆',lat:28.184904,lng:112.983172,blurb:'Free museum of ancient bamboo writing slips dug up in central Changsha, next to Tianxin Pavilion. Open 9:00–17:00 (last entry 16:30), closed Tuesdays; book on the museum’s WeChat account and bring your passport. Daytime only.'},
  {id:'hx-chaozong',n:'+',opt:true,name:'Chaozong Street',zh:'潮宗街',lat:28.203101,lng:112.973612,blurb:'Granite-paved historic street about 20 minutes’ walk north, lined with cafés and restored old buildings. Quieter than Taiping Street.'},
- {id:'hx-juzizhou',n:'+',opt:true,name:'Orange Isle',zh:'橘子洲',lat:28.195153,lng:112.962324,blurb:'Long island in the Xiang River, free to enter. The pin is the Juzizhou metro stop (Line 2). The giant Young Mao head sculpture is about 2 km south of it at the island’s tip, and sightseeing buggies run the length of the island.'}
+ {id:'hx-juzizhou',n:'+',opt:true,name:'Orange Isle',zh:'橘子洲',lat:28.195153,lng:112.962324,blurb:'Long island in the Xiang River. Free, but you must reserve first on the WeChat account 岳麓山橘子洲旅游区 (passport holders can also use the manual lane at the gate); walk-ups are turned away on holidays. Open 07:00–22:00. The pin is Juzizhou metro (Line 2); the giant Young Mao head is about 3 km south at the island’s tip, and sightseeing trains run the length of it.'}
   ],
   eats:[
  {id:'eat-huogong',n:'🍜',opt:true,eat:true,name:'Huogongdian (Pozi Street)',zh:'火宫殿（坡子街总店）',lat:28.190048,lng:112.973951,blurb:'Changsha’s best-known old restaurant, on Pozi Street. Order a spread of small local snacks: stinky tofu, sugar-oil baba (糖油粑粑) and steamed dishes. The pin marks Pozi Street; the restaurant is along it.'},
  {id:'eat-feidachu',n:'🍜',opt:true,eat:true,name:'Fei Da Chu',zh:'费大厨辣椒炒肉（坡子街店）',lat:28.190093,lng:112.973184,blurb:'Popular Hunan chain famous for one dish, chili-fried pork (辣椒炒肉), with rice. Queues at meal times; take a number and wander Pozi Street meanwhile.'},
- {id:'eat-wenheyou',n:'🍜',opt:true,eat:true,name:'Super Wenheyou',zh:'超级文和友（海信广场）',lat:28.187097,lng:112.969727,blurb:'Retro 1980s Changsha food complex inside Hisense Plaza (海信广场), near the river, open until 2am. Crayfish, stinky tofu and dozens of stalls; free to wander, table queues can be long.'},
+ {id:'eat-wenheyou',n:'🍜',opt:true,eat:true,name:'Super Wenheyou',zh:'超级文和友（海信广场）',lat:28.189043,lng:112.969744,blurb:'Retro 1980s Changsha food complex inside Hisense Plaza (海信广场), near the river, open until late (about 2–3am). Crayfish, stinky tofu and dozens of stalls; free to wander, table queues can be long.'},
  {id:'eat-chayan',n:'🧋',opt:true,eat:true,name:'Chayan Yuese',zh:'茶颜悦色（黄兴路步行街）',lat:28.183778,lng:112.976509,blurb:'Changsha’s famous milk-tea chain, only found around here. There are branches every few hundred metres; this one is near the south end of the street.'}
   ]}
 };
+/* the real hotel on every walk (taxi card, Hotel button, H pin); never in ALL, so no auto-tick and no list row */
+var HOME=Object.assign({},DAYS.today.base,{id:'home',blurb:'Your hotel, about 1 km east of Huangxing Road. Show the Driver card to a taxi driver to get back.'});
 var DAY_KEY='changsha-walk-day';
 var DAY=(function(){try{var d=localStorage.getItem(DAY_KEY);return DAYS[d]?d:'today'}catch(e){return 'today'}})();
 var HOTEL=DAYS[DAY].base,STOPS=DAYS[DAY].stops,EXTRAS=DAYS[DAY].extras,EATS=DAYS[DAY].eats||[];
 var ALL=STOPS.concat(EXTRAS,EATS);
 var BY={};ALL.concat([HOTEL]).forEach(function(s){BY[s.id]=s});
+BY.home=HOME;
+/* everything with a pin: on the Huangxing Rd walk the hotel gets its own H pin */
+var PINNED=ALL.concat([HOTEL],DAY!=='today'?[HOME]:[]);
+function isBase(s){return s===HOTEL||s===HOME}
+var CARRY=['labels','fix','night','wake'];
+function carry(){var o={};CARRY.forEach(function(k){o[k]=S[k]});return o}
 
 /* ---------- WGS-84 (phone GPS) to GCJ-02 (Chinese map) ---------- */
 var PI=Math.PI,A=6378245.0,EE=0.00669342162296594323;
@@ -1046,7 +1075,7 @@ function dist(a,b){var dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng),h=Math.pow(Ma
 function bearing(a,b){var p1=rad(a.lat),p2=rad(b.lat),dl=rad(b.lng-a.lng),y=Math.sin(dl)*Math.cos(p2),x=Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl);return(deg(Math.atan2(y,x))+360)%360}
 var DIRS=['north','northeast','east','southeast','south','southwest','west','northwest'];
 function cardinal(b){return DIRS[Math.round(b/45)%8]}
-function fmtD(m){return m<1000?(Math.round(m/10)*10)+' m':(m/1000).toFixed(1)+' km'}
+function fmtD(m){var r=Math.round(m/10)*10;return r<1000?r+' m':(m/1000).toFixed(1)+' km'}
 function walkMin(m){return Math.max(1,Math.round(m*1.25/78))}
 function fmtT(ms){var s=Math.floor(ms/1000),h=Math.floor(s/3600),mi=Math.floor(s%3600/60),se=s%60;return h?h+':'+String(mi).padStart(2,'0')+':'+String(se).padStart(2,'0'):mi+':'+String(se).padStart(2,'0')}
 function amap(s){return 'https://uri.amap.com/navigation?to='+s.lng+','+s.lat+','+encodeURIComponent(s.zh)+'&mode=walk&coordinate=gaode&callnative=1&src=changsha-night-walk'}
@@ -1064,6 +1093,7 @@ var watchId=null,sessionAt=null,me=null,meRaw=null,acc=null,gpsHeading=null,comp
 /* ---------- map ---------- */
 var map=L.map('map',{zoomControl:false,attributionControl:true});
 map.attributionControl.setPrefix('Leaflet');
+map.attributionControl.setPosition('topleft');
 function tileUrl(){return 'https://webrd0{s}.is.autonavi.com/appmaptile?lang='+(S.labels==='zh'?'zh_cn':'en')+'&size=1&scale=1&style=8&x={x}&y={y}&z={z}'}
 var tileErr=0,tileOk=0;
 var tiles=L.tileLayer(tileUrl(),{subdomains:'1234',maxZoom:19,maxNativeZoom:18,attribution:'Map © AutoNavi'}).addTo(map);
@@ -1076,23 +1106,37 @@ var accCircle=null,meMarker=null;
 
 var sheet=$('#sheet');
 function sheetH(){return sheet.offsetHeight||260}
+var SAT=(function(){var d=document.createElement('div');d.style.cssText='position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden';document.body.appendChild(d);var h=d.offsetHeight;d.remove();return h})();
 var markers={};
 function pinIcon(s){
-  var cls='pin'+(s.opt?' opt':'')+(s.id==='hotel'?' home':'')+(S.visited[s.id]?' done':'')+(s.id===curNext?' next':'');
+  var cls='pin'+(s.opt?' opt':'')+(isBase(s)?' home':'')+(S.visited[s.id]?' done':'')+(s.id===curNext?' next':'');
   return L.divIcon({className:'pin-wrap',html:'<div class="'+cls+'">'+(S.visited[s.id]?'✓':s.n)+'</div>',iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-14]});
 }
 function popupHtml(s){
   var d=me?'<div class="pop-d">'+fmtD(dist(me,s))+' away, about '+walkMin(dist(me,s))+' min</div>':'';
-  var visit=s.id==='hotel'?'':'<button class="chip" data-act="visit" data-id="'+s.id+'">'+(S.visited[s.id]?'Undo':'Done')+'</button>';
+  var visit=isBase(s)?'':'<button class="chip" data-act="visit" data-id="'+s.id+'">'+(S.visited[s.id]?'Undo':'Done')+'</button>';
   return '<div class="pop"><strong>'+s.name+'</strong><div class="zh">'+s.zh+'</div><p>'+s.blurb+'</p>'+d+
     '<div class="acts"><button class="chip" data-act="route" data-id="'+s.id+'">Route</button><button class="chip" data-act="card" data-id="'+s.id+'">Driver card</button>'+visit+'</div></div>';
 }
-ALL.concat([HOTEL]).forEach(function(s){
+PINNED.forEach(function(s){
   markers[s.id]=L.marker([s.lat,s.lng],{icon:pinIcon(s),title:s.name,riseOnHover:true})
-    .bindPopup(function(){return popupHtml(s)},{maxWidth:270,autoPanPaddingTopLeft:[10,70],autoPanPaddingBottomRight:[10,sheetH()+10]})
+    .bindPopup(function(){return popupHtml(s)},{maxWidth:Math.min(270,innerWidth-110),autoPanPaddingTopLeft:[10,70+SAT],autoPanPaddingBottomRight:[66,sheetH()+10]})
     .addTo(map);
 });
-function refreshPins(){ALL.concat([HOTEL]).forEach(function(s){markers[s.id].setIcon(pinIcon(s))})}
+/* keep popups clear of the FAB column, of whichever bottom panel is showing right now and of a toast */
+var openPop=null;
+map.on('popupopen',function(e){
+  openPop=e.popup;placeToast();/* a toast that is up moves to the top slot, out of the band this popup is panned into */
+  var bottom=dirEl().hidden?(sheet.hidden?0:sheetH()):dirH(),top=Math.max(70+SAT,toastTop()+6),o=e.popup.options;
+  o.autoPanPaddingTopLeft=L.point(10,top);
+  o.autoPanPaddingBottomRight=L.point(66,bottom+10);
+  /* on short phones a long blurb would push the chips under the sheet, so the popup scrolls instead
+     (48 = content margins 26 + wrapper border 2 + tip 20) */
+  o.maxHeight=Math.max(120,innerHeight-bottom-10-top-48);
+  e.popup.update();
+});
+map.on('popupclose',function(e){if(openPop===e.popup)openPop=null});
+function refreshPins(){PINNED.forEach(function(s){markers[s.id].setIcon(pinIcon(s))})}
 
 function drawTrail(){
   trailLayer.clearLayers();
@@ -1107,17 +1151,47 @@ function trailAppend(){
 
 function fitAll(){
   var pts=ALL.concat([HOTEL]).map(function(p){return[p.lat,p.lng]});
-  map.fitBounds(L.latLngBounds(pts),{paddingTopLeft:[24,70],paddingBottomRight:[24,sheetH()+16],maxZoom:16,animate:false});
+  map.fitBounds(L.latLngBounds(pts),{paddingTopLeft:[24,70+SAT],paddingBottomRight:[24,sheetH()+16],maxZoom:16,animate:false});
 }
 
 /* ---------- UI helpers ---------- */
-var banner=$('#banner'),toastEl=$('#toast'),toastT=null;
+var banner=$('#banner'),toastEl=$('#toast'),toastT=null,toastRAF=0;
 function showBanner(msg,kind,id){banner.textContent=msg;banner.dataset.k=kind||'warn';banner.dataset.id=id||'';var b=document.createElement('button');b.textContent='Dismiss';b.onclick=hideBanner;banner.appendChild(b);banner.hidden=false}
 function hideBanner(){banner.hidden=true;banner.dataset.id=''}
-function toast(msg){toastEl.textContent=msg;toastEl.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){toastEl.hidden=true},3200)}
+function bottomH(){/* height of the bottom panel that is showing: the sheet, the route panel or the map-pick bar */
+  if(!sheet.hidden)return sheetH();
+  if(!dirEl().hidden)return dirH();
+  var pb=$('#pickbar');return pb.hidden?0:Math.max(0,innerHeight-pb.getBoundingClientRect().top);
+}
+function placeToast(){
+  /* sit just above whichever bottom panel is visible, so the toast never covers the FABs, the next-stop card or the route panel */
+  if(toastEl.hidden)return;
+  /* an open popup is panned, and a route is fitted, into the band just above the bottom panel: there the toast would hide
+     the popup's chips (and its Undo would take their taps) or the route's end, so it moves up and stays up until it hides */
+  if(openPop||!dirEl().hidden)toastEl.classList.add('top');
+  if(toastEl.classList.contains('top'))return;
+  document.documentElement.style.setProperty('--sheet-h',bottomH()+'px');
+  toastEl.classList.remove('narrow');
+  var t=toastEl.getBoundingClientRect(),f=$('.fabs').getBoundingClientRect();
+  if(t.top<f.bottom+6&&t.right>f.left-6)toastEl.classList.add('narrow');/* it would reach the FAB column: keep it left of it */
+}
+/* the panels change height (list, route panel, steps, a wrapping distance line) while a toast is up: keep it above them */
+if(window.ResizeObserver){var toastRO=new ResizeObserver(placeToast);[sheet,$('#dir'),$('#pickbar')].forEach(function(el){toastRO.observe(el)})}
+addEventListener('resize',placeToast);
+function toastTop(){/* the bottom edge of a toast docked at the top, or 0: popups and route fits keep below it */
+  return toastEl.hidden||!toastEl.classList.contains('top')?0:Math.ceil(toastEl.getBoundingClientRect().bottom);
+}
+function hideToast(){clearTimeout(toastT);toastEl.hidden=true}
+function toast(msg,actLabel,actFn){
+  toastEl.textContent=msg;toastEl.classList.remove('top');
+  if(actLabel&&actFn){var b=document.createElement('button');b.type='button';b.textContent=actLabel;b.addEventListener('click',function(){hideToast();actFn()});toastEl.appendChild(b)}
+  toastEl.hidden=false;placeToast();clearTimeout(toastT);toastT=setTimeout(hideToast,actLabel&&actFn?6000:3200);
+  if(!window.ResizeObserver&&!toastRAF)(function keep(){if(toastEl.hidden){toastRAF=0;return}placeToast();toastRAF=requestAnimationFrame(keep)})();/* older browsers: track the panels every frame while it shows */
+}
 function setStatus(s,text){var el=$('#status');el.dataset.s=s;$('#statusText').textContent=text}
 
 function heading(){return compassHeading!=null?compassHeading:gpsHeading}
+function setFollow(v){follow=v;$('#btnLocate').setAttribute('aria-pressed',String(watchId!=null&&v))}
 
 function updateArrow(){
   var next=BY[curNext],comp=$('#compass'),h=heading();
@@ -1148,12 +1222,12 @@ function ui(){
     $('#nextDist').textContent=d<40?'You’re here':fmtD(d);
     $('#nextTime').textContent=d<40?'':'about '+walkMin(d)+' min';
     $('#nextDir').textContent=d<40?'':'to the '+cardinal(b);
-    $('#btnHotel').textContent=HOTEL.short+' '+fmtD(dist(me,HOTEL));
+    $('#btnHotel').innerHTML='Hotel <small>'+fmtD(dist(me,HOME))+'</small>';
   }else{
     $('#nextDist').textContent='–';
     $('#nextTime').textContent=watchId!=null?'Finding you…':'Start tracking to see distance';
     $('#nextDir').textContent='';
-    $('#btnHotel').textContent=HOTEL.short;
+    $('#btnHotel').textContent='Hotel';
   }
   ALL.forEach(function(s){
     var row=document.getElementById('row-'+s.id);if(!row)return;
@@ -1164,7 +1238,9 @@ function ui(){
     if(me){var dd=dist(me,s);dEl.innerHTML=fmtD(dd)+'<small>'+walkMin(dd)+' min</small>'}else dEl.textContent='–';
   });
   var tb=$('#btnTrack');
-  tb.textContent=watchId!=null?'Stop tracking':(S.trail.some(function(g){return g.length})?'Resume tracking':'Start tracking');
+  var resume=watchId==null&&S.trail.some(function(g){return g.length});
+  tb.textContent=watchId!=null?'Stop tracking':resume?'Resume':'Start tracking';
+  if(resume)tb.setAttribute('aria-label','Resume tracking');else tb.removeAttribute('aria-label');
   tb.classList.toggle('on',watchId!=null);
   $('#hint').textContent=watchId!=null?'Keep this page open while you walk. Phones pause web GPS when the screen locks.':'Tap Start tracking, then allow location access. Your track and visited stops are saved on this phone.';
   $('#btnLocate').setAttribute('aria-pressed',String(watchId!=null&&follow));
@@ -1182,24 +1258,27 @@ $('#list').innerHTML=STOPS.map(rowHtml).join('')+'<h4 class="group">Worth a deto
 
 function toggleList(force){
   var list=$('#list'),open=force!=null?force:list.hidden;
-  list.hidden=!open;if(open)hideBanner();
-  $('#handle').setAttribute('aria-expanded',String(open));$('#btnList').setAttribute('aria-expanded',String(open));
+  list.hidden=!open;sheet.classList.toggle('list-open',open);if(open)hideBanner();
+  $('#handle').setAttribute('aria-expanded',String(open));$('#handle').setAttribute('aria-label',open?'Hide stops':'Show all stops');$('#btnList').setAttribute('aria-expanded',String(open));
   $('#btnList').textContent=open?'Hide stops':'All stops';
 }
 
 /* ---------- actions ---------- */
 function toggleVisit(id){
-  if(!id||id==='hotel')return;
+  if(!id||id==='hotel'||id==='home')return;
+  var s=BY[id];if(!s)return;
   if(S.visited[id])delete S.visited[id];else S.visited[id]=Date.now();
   map.closePopup();refreshPins();ui();save();
+  toast((S.visited[id]?'Marked ':'Unmarked ')+(s.short||s.name)+(S.visited[id]?' done':''),'Undo',function(){toggleVisit(id)});
 }
 function flyTo(id){
-  var s=BY[id];if(!s)return;follow=false;toggleList(false);
+  var s=BY[id];if(!s)return;setFollow(false);toggleList(false);
   if(RM)map.setView([s.lat,s.lng],17);else map.flyTo([s.lat,s.lng],17,{duration:.6});
   setTimeout(function(){markers[id].openPopup()},RM?0:650);ui();
 }
 function showCard(id){
   var s=BY[id];if(!s)return;
+  map.closePopup();
   $('#cardBig').textContent=s.zh;$('#cardEn').textContent=s.name;
   var tel=$('#cardTel');if(s.tel){tel.hidden=false;tel.textContent='电话 '+s.tel;tel.href='tel:'+s.tel.replace(/\s/g,'')}else tel.hidden=true;
   $('#cardRoute').href=amap(s);
@@ -1230,7 +1309,7 @@ function startTracking(){
   if(!('geolocation' in navigator)){showBanner('This browser can’t share your location. Open the file in Chrome or Safari.','bad');return}
   if(!geoOK()){showBanner(INSECURE_MSG,'bad','secure');setStatus('blocked','No location here');return}
   var last=S.trail[S.trail.length-1];if(!last||last.length)S.trail.push([]);
-  sessionAt=Date.now();follow=true;firstFix=true;
+  sessionAt=Date.now();setFollow(true);firstFix=true;
   setStatus('search','Finding you…');
   watchId=navigator.geolocation.watchPosition(onPos,onErr,{enableHighAccuracy:true,maximumAge:3000,timeout:30000});
   if(S.wake)setWake(true);
@@ -1247,7 +1326,7 @@ function onPos(p){
   var spd=typeof c.speed==='number'?c.speed:null;
   if(typeof c.heading==='number'&&!isNaN(c.heading)&&spd!=null&&spd>0.6)gpsHeading=c.heading;else if(spd!=null&&spd<0.3)gpsHeading=null;
   var m=toMap(meRaw.lat,meRaw.lng);me={lat:m[0],lng:m[1]};
-  if(banner.dataset.id==='gps')hideBanner();
+  if(banner.dataset.id==='gps'||banner.dataset.id==='perm')hideBanner();
 
   /* track */
   if(acc<=50){
@@ -1298,9 +1377,9 @@ function onErr(e){
 $('#btnTrack').addEventListener('click',function(){watchId!=null?stopTracking():startTracking()});
 $('#btnLocate').addEventListener('click',function(){
   if(watchId==null){startTracking();return}
-  follow=true;if(me)map.setView([me.lat,me.lng],Math.max(map.getZoom(),17),{animate:!RM});ui();
+  setFollow(true);if(me)map.setView([me.lat,me.lng],Math.max(map.getZoom(),17),{animate:!RM});ui();
 });
-map.on('dragstart',function(){if(follow){follow=false;ui()}});
+map.on('dragstart',function(){if(follow){setFollow(false);ui()}});
 
 setInterval(function(){
   if(sessionAt){var now=Date.now();S.elapsed+=now-sessionAt;sessionAt=now;updateStats()}
@@ -1352,7 +1431,8 @@ window.addEventListener('pagehide',function(){if(sessionAt){S.elapsed+=Date.now(
 /* ---------- settings ---------- */
 var menu=$('#menu');
 function closeMenu(){menu.hidden=true;$('#btnMenu').setAttribute('aria-expanded','false')}
-$('#btnMenu').addEventListener('click',function(){var open=menu.hidden;menu.hidden=!open;this.setAttribute('aria-expanded',String(open))});
+$('#btnMenu').addEventListener('click',function(){var open=menu.hidden;menu.hidden=!open;this.setAttribute('aria-expanded',String(open));
+  if(open)hideToast();/* the menu fills the top and middle of the screen: a toast left up would sit on its controls */});
 
 function syncSettings(){
   document.querySelectorAll('[data-lab]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-lab')===S.labels))});
@@ -1377,8 +1457,7 @@ $('#btnGpx').addEventListener('click',function(){
 });
 $('#btnReset').addEventListener('click',function(){
   if(!confirm('Clear your track, tracking time and done stops?'))return;
-  var keep={labels:S.labels,fix:S.fix,night:S.night,wake:S.wake};
-  S=Object.assign({},DEF,keep,{visited:{},trail:[]});
+  S=Object.assign({},DEF,carry(),{visited:{},trail:[]});
   if(watchId!=null){S.trail.push([]);sessionAt=Date.now()}
   liveLine=null;drawTrail();refreshPins();ui();save();closeMenu();toast('Walk reset');
 });
@@ -1440,11 +1519,12 @@ function routeOSRM(a,b){
 
 var NAV={from:null,to:null,route:null,pending:false,lastReroute:0,offCount:0,curStep:-2,buzzed:-1,layer:L.layerGroup().addTo(map)};
 var navReq=0;
-function placeEnd(s){return s?{type:'place',lat:s.lat,lng:s.lng,label:s.id==='hotel'?HOTEL.short:s.name,zh:s.zh,id:s.id}:null}
+function placeEnd(s){return s?{type:'place',lat:s.lat,lng:s.lng,label:isBase(s)?s.short:s.name,zh:s.zh,id:s.id}:null}
 function endLabel(e){return !e?'':e.type==='me'?'My location':e.label}
 function endLL(e){if(!e)return null;if(e.type==='me')return me?[me.lat,me.lng]:null;return[e.lat,e.lng]}
 function endWgs(e){if(e.type==='me'){if(!meRaw)return null;return S.fix?[meRaw.lat,meRaw.lng]:g2w(meRaw.lat,meRaw.lng)}return g2w(e.lat,e.lng)}
 function dirEl(){return $('#dir')}
+var dirSrc=$('#dirSrc');/* kept by reference: renderDir moves it into #steps so it scrolls with them */
 function dirH(){return dirEl().offsetHeight||300}
 function setDirMsg(m){var el=$('#dirMsg');el.textContent=m||'';el.hidden=!m}
 function amapRoute(f,t){
@@ -1455,7 +1535,8 @@ function amapRoute(f,t){
 }
 function showDir(open){
   dirEl().hidden=!open;sheet.hidden=open;$('#btnDir').setAttribute('aria-pressed',String(open));
-  if(open){closeMenu();toggleList(false)}
+  if(open){closeMenu();toggleList(false);map.closePopup()}
+  placeToast();
 }
 function openRoute(to,from){
   if(from)NAV.from=from;if(to)NAV.to=to;
@@ -1497,21 +1578,22 @@ function drawRoute(fit){
   var f=endLL(NAV.from),t=endLL(NAV.to);
   if(f&&NAV.from.type!=='me'&&!NAV.from.id)endMarker(f,'a').addTo(NAV.layer);
   if(t&&NAV.to.type!=='me'&&!NAV.to.id)endMarker(t,'b').addTo(NAV.layer);
-  if(fit&&r){follow=false;map.fitBounds(L.latLngBounds(r.disp),{paddingTopLeft:[24,70],paddingBottomRight:[70,dirH()+16],maxZoom:18,animate:!RM})}
+  if(fit&&r){setFollow(false);map.fitBounds(L.latLngBounds(r.disp),{paddingTopLeft:[24,Math.max(70+SAT,toastTop()+20)],paddingBottomRight:[70,dirH()+16],maxZoom:18,animate:!RM})}
 }
 function renderDir(){
   var ft=$('#fromTxt'),tt=$('#toTxt');
+  dirEl().classList.toggle('from-me',!!(NAV.from&&NAV.from.type==='me'&&NAV.route));
   ft.textContent=NAV.from?endLabel(NAV.from):'Choose start';ft.classList.toggle('ph',!NAV.from);
   tt.textContent=NAV.to?endLabel(NAV.to):'Choose destination';tt.classList.toggle('ph',!NAV.to);
   var r=NAV.route;
-  if(!r){$('#dirSum').hidden=true;$('#steps').innerHTML='';$('#navNow').hidden=true;$('#dirSrc').hidden=true;return}
+  if(!r){$('#dirSum').hidden=true;$('#steps').innerHTML='';$('#navNow').hidden=true;dirSrc.hidden=true;dirEl().appendChild(dirSrc);return}
   setDirMsg('');
   $('#dirSum').hidden=false;
   $('#sumDist').textContent=fmtD(r.dist);
-  $('#sumTime').textContent='about '+Math.max(1,Math.round(r.time/60))+' min walk';
+  $('#sumTime').textContent='about '+Math.max(1,Math.round(r.time/60))+' min';
   var link=amapRoute(NAV.from,NAV.to),a=$('#sumAmap');a.hidden=!link;if(link)a.href=link;
   $('#steps').innerHTML=r.steps.map(function(s,i){return '<button class="step" data-step="'+i+'"><span class="ic">'+s.icon+'</span><span>'+esc(s.text)+'</span><span class="sd">'+(s.dist>=1?fmtD(s.dist):'')+'</span></button>'}).join('');
-  var src=$('#dirSrc');src.hidden=false;src.textContent='Route from OpenStreetMap data via '+r.src+'. Some footpaths in Changsha may be missing; Amap has fuller coverage.';
+  var src=dirSrc;$('#steps').appendChild(src);src.hidden=false;src.textContent='Route from OpenStreetMap data via '+r.src+'. Some footpaths in Changsha may be missing; Amap has fuller coverage.';
   NAV.curStep=-2;updateNav();
 }
 function markStep(i){
@@ -1543,7 +1625,7 @@ function updateNav(){
 }
 function zoomStep(i){
   var r=NAV.route;if(!r||!r.steps[i])return;
-  var p=r.disp[Math.min(r.steps[i].idx,r.disp.length-1)];follow=false;
+  var p=r.disp[Math.min(r.steps[i].idx,r.disp.length-1)];setFollow(false);
   map.setView(p,18,{animate:false});map.panBy([0,Math.round(dirH()/2)],{animate:false});
 }
 
@@ -1556,8 +1638,8 @@ function openPicker(which){
   var h='<button class="opt" data-pick="me"'+(geoOK()?'':' disabled')+'><span class="num ic-me">◎</span><span>My location'+(geoOK()?'':'<small>Needs the page opened from an https link</small>')+'</span></button>'+
     '<button class="opt" data-pick="map"><span class="num ic-plain">✥</span><span>Pick on the map<small>Tap any spot</small></span></button>'+
     '<div class="opt-group">Your stops</div>';
-  [HOTEL].concat(STOPS,EXTRAS,EATS).forEach(function(s){
-    h+='<button class="opt" data-pick="place" data-id="'+s.id+'"><span class="num'+(s.id==='hotel'?' home':'')+(s.opt?' optn':'')+'">'+s.n+'</span><span>'+s.name+'<small>'+s.zh+'</small></span></button>';
+  (DAY!=='today'?[HOME]:[]).concat([HOTEL],STOPS,EXTRAS,EATS).forEach(function(s){
+    h+='<button class="opt" data-pick="place" data-id="'+s.id+'"><span class="num'+(isBase(s)?' home':'')+(s.opt?' optn':'')+'">'+s.n+'</span><span>'+(s===HOME?'Your hotel':s.name)+'<small>'+s.zh+'</small></span></button>';
   });
   $('#pickOpts').innerHTML=h;
   $('#picker').hidden=false;
@@ -1613,7 +1695,7 @@ $('#dirClose').addEventListener('click',endRoute);
 $('#fromBtn').addEventListener('click',function(){openPicker('from')});
 $('#toBtn').addEventListener('click',function(){openPicker('to')});
 $('#swapBtn').addEventListener('click',function(){var t=NAV.from;NAV.from=NAV.to;NAV.to=t;NAV.route=null;computeRoute()});
-$('#dirSteps').addEventListener('click',function(){var c=dirEl().classList.toggle('compact');this.textContent=c?'Show steps':'Hide steps';this.setAttribute('aria-expanded',String(!c))});
+$('#dirSteps').addEventListener('click',function(){var c=dirEl().classList.toggle('compact');this.textContent=c?'Show steps':'Hide steps';this.setAttribute('aria-expanded',String(!c));if(NAV.route&&NAV.from&&NAV.from.type!=='me')drawRoute(true)});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){if(!$('#picker').hidden)closePicker();else if(mapPick){endMapPick();renderDir()}}});
 
 /* ---------- day switch ---------- */
@@ -1626,7 +1708,7 @@ document.querySelectorAll('[data-day]').forEach(function(b){b.addEventListener('
   try{
     localStorage.setItem(KEY,JSON.stringify(S));
     var other={};try{other=JSON.parse(localStorage.getItem(DAYS[d].key))||{}}catch(e){}
-    localStorage.setItem(DAYS[d].key,JSON.stringify(Object.assign(other,{labels:S.labels,fix:S.fix,night:S.night,wake:S.wake})));
+    localStorage.setItem(DAYS[d].key,JSON.stringify(Object.assign(other,carry())));
     localStorage.setItem(DAY_KEY,d);
     sessionStorage.setItem('changsha-walk-switched',wasTracking?'track':'1');
   }catch(e){toast('This browser can’t save the choice');return}
