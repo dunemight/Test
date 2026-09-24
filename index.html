@@ -904,7 +904,7 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
 <section class="sheet" id="sheet" aria-label="Walk guide">
   <button class="handle" id="handle" aria-label="Show all stops" aria-expanded="false" aria-controls="list"></button>
   <div class="daybar"><span>Walk</span>
-    <div class="seg" role="group" aria-label="Which day’s walk"><button data-day="today" aria-pressed="true">Today</button><button data-day="tomorrow" aria-pressed="false">Tomorrow · Huangxing Rd</button></div>
+    <div class="seg" role="group" aria-label="Which day’s walk"><button data-day="today" aria-pressed="true">Hotel loop</button><button data-day="tomorrow" aria-pressed="false">Huangxing Rd</button></div>
   </div>
   <div class="next">
     <div class="compass idle" id="compass" aria-hidden="true">
@@ -991,9 +991,8 @@ var $=function(s){return document.querySelector(s)};
 var RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 
 /* ---------- places (GCJ-02, the datum Chinese maps use) ---------- */
-var HOTEL={id:'hotel',n:'H',name:'Wyndham Grand Plaza Royale Furongguo',zh:'长沙芙蓉国温德姆至尊豪廷大酒店',lat:28.1865751,lng:112.9860048,tel:'+86 731 8868 8888',blurb:'Your hotel, the start and end of the loop.'};
 var DAYS={
- today:{label:'Today',key:'changsha-night-walk-v1',stops:[
+ today:{label:'Hotel loop',key:'changsha-night-walk-v1',base:{id:'hotel',n:'H',name:'Wyndham Grand Plaza Royale Furongguo',zh:'长沙芙蓉国温德姆至尊豪廷大酒店',lat:28.1865751,lng:112.9860048,tel:'+86 731 8868 8888',short:'Hotel',back:'Back to the hotel',blurb:'Your hotel, the start and end of the loop.'},eats:[],stops:[
  {id:'tianxin',n:1,name:'Tianxin Pavilion',zh:'天心阁',lat:28.183687,lng:112.981369,blurb:'A pavilion on a surviving stretch of the old city wall, lit up at night. The park around it is free; the paid top section (¥32) may be closed this late.'},
  {id:'huangxing',n:2,name:'Huangxing Walking Street',zh:'黄兴南路步行街',lat:28.186413,lng:112.976319,blurb:'The main neon pedestrian strip. Grab a Chayan Yuese (茶颜悦色) tea, or black stinky tofu if you still have room.'},
  {id:'dufu',n:3,name:'Du Fu Riverside Pavilion',zh:'杜甫江阁',lat:28.185192,lng:112.968851,blurb:'Golden pavilion on the Xiang River, facing Orange Isle. Entry is a small fee checked by ID, so bring your passport. The riverside path is free.'},
@@ -1004,23 +1003,33 @@ var DAYS={
  {id:'pozi',n:'+',opt:true,name:'Pozi Street',zh:'坡子街',lat:28.189685,lng:112.974006,blurb:'Snack street between Huangxing Road and the river, home of Huogongdian (火宫殿), the old-school stinky tofu institution.'},
  {id:'taiping',n:'+',opt:true,name:'Taiping Old Street',zh:'太平老街',lat:28.19515,lng:112.97181,blurb:'Restored old lane with snack stalls and small shops, a short detour north of the loop.'}
 ]},
- tomorrow:{label:'Tomorrow',key:'changsha-night-walk-v1-tomorrow',stops:[
- {id:'hx-street',n:1,name:'Huangxing Road Pedestrian Street',zh:'黄兴南路步行街',lat:28.186413,lng:112.976319,blurb:'The day’s base: the main shopping strip. Walk it south first; the stops below circle the lanes on either side.'},
- {id:'hx-nanmen',n:2,name:'Nanmenkou & the Huang Xing statue',zh:'南门口',lat:28.182875,lng:112.976225,blurb:'The south end of the street, where the old south city gate stood. The bronze statue of Huang Xing, the revolutionary the road is named after, is here, and the side streets are full of local snack stalls.'},
- {id:'hx-wenmiao',n:3,name:'Xiwenmiaoping',zh:'西文庙坪',lat:28.184732,lng:112.971991,blurb:'A quiet old neighbourhood with a stone memorial archway left over from the city’s old Confucian school. It’s a short step into pre-mall Changsha.'},
- {id:'hx-huogong',n:4,name:'Pozi Street & Huogongdian',zh:'坡子街 火宫殿',lat:28.190048,lng:112.973951,blurb:'Snack street, home of Huogongdian (火宫殿), the century-old restaurant famous for stinky tofu and sugar-oil baba (糖油粑粑).'},
- {id:'hx-jiayi',n:5,name:'Taiping Street & Jia Yi’s Former Residence',zh:'太平街 贾谊故居',lat:28.192639,lng:112.971847,blurb:'Restored old street of grey-brick shops. Halfway along is the former home of Jia Yi, a Han-dynasty scholar and poet, now a small courtyard museum.'},
- {id:'hx-hualong',n:6,name:'Hualongchi & Baiguoyuan lanes',zh:'化龙池 白果园',lat:28.187328,lng:112.977246,blurb:'Narrow old lanes just east of the main street, with small bars, cafés and old stone-framed houses. A good last stop on the way back to the hotel.'}
-],extras:[
- {id:'hx-jiandu',n:'+',opt:true,name:'Changsha Bamboo Slips Museum',zh:'长沙简牍博物馆',lat:28.184904,lng:112.983172,blurb:'Museum of ancient bamboo writing slips dug up in central Changsha, close to the hotel. Daytime hours only and usually closed on Mondays; bring your passport.'},
+ tomorrow:{label:'Huangxing Rd',key:'changsha-night-walk-v1-tomorrow',
+  base:{id:'hotel',n:'★',name:'Huangxing Road Pedestrian Street',zh:'黄兴南路步行街',lat:28.186413,lng:112.976319,short:'Base',back:'Back to Huangxing Rd',blurb:'Your base: the main pedestrian shopping street. The loop starts and ends here.'},
+  stops:[
+ {id:'hx-nanmen',n:1,name:'Nanmenkou & the Huang Xing statue',zh:'南门口',lat:28.182875,lng:112.976225,blurb:'The south end of the street, where the old south city gate stood. The bronze statue of Huang Xing, the revolutionary the road is named after, is here, and the side streets are full of local snack stalls.'},
+ {id:'hx-tianxin',n:2,name:'Tianxin Pavilion',zh:'天心阁',lat:28.183687,lng:112.981369,blurb:'A pavilion on the last surviving stretch of the old city wall, in a free park. The paid top section (about ¥32) has the best view back over the old town.'},
+ {id:'hx-hualong',n:3,name:'Hualongchi & Baiguoyuan lanes',zh:'化龙池 白果园',lat:28.187328,lng:112.977246,blurb:'Narrow old lanes just east of the main street, with small bars, cafés and old stone-framed houses.'},
+ {id:'hx-ifs',n:4,name:'Changsha IFS rooftop',zh:'长沙国金中心 IFS',lat:28.191892,lng:112.97693,blurb:'Upscale mall at the north end of the street, known for the giant art-toy sculptures on its rooftop garden. Malls here usually close around 10pm.'},
+ {id:'hx-jiayi',n:5,name:'Taiping Street & Jia Yi’s Former Residence',zh:'太平街 贾谊故居',lat:28.192639,lng:112.971847,blurb:'Restored old street of grey-brick shops and snack stalls. Halfway along is the former home of Jia Yi, a Han-dynasty scholar and poet, now a small courtyard museum.'},
+ {id:'hx-dufu',n:6,name:'Du Fu Riverside Pavilion',zh:'杜甫江阁',lat:28.185192,lng:112.968851,blurb:'Golden pavilion on the Xiang River, facing Orange Isle. The riverside path is free and good at sunset; the pavilion itself has a small fee checked by ID, so bring your passport.'},
+ {id:'hx-wenmiao',n:7,name:'Xiwenmiaoping',zh:'西文庙坪',lat:28.184732,lng:112.971991,blurb:'A quiet old neighbourhood with a stone memorial archway left over from the city’s old Confucian school. A short step into pre-mall Changsha on the way back to the main street.'}
+  ],
+  extras:[
+ {id:'hx-jiandu',n:'+',opt:true,name:'Changsha Bamboo Slips Museum',zh:'长沙简牍博物馆',lat:28.184904,lng:112.983172,blurb:'Museum of ancient bamboo writing slips dug up in central Changsha, next to Tianxin Pavilion. Daytime hours only and usually closed on Mondays; bring your passport.'},
  {id:'hx-chaozong',n:'+',opt:true,name:'Chaozong Street',zh:'潮宗街',lat:28.203101,lng:112.973612,blurb:'Granite-paved historic street about 20 minutes’ walk north, lined with cafés and restored old buildings. Quieter than Taiping Street.'},
  {id:'hx-juzizhou',n:'+',opt:true,name:'Orange Isle',zh:'橘子洲',lat:28.195153,lng:112.962324,blurb:'Long island in the Xiang River, free to enter. The pin is the Juzizhou metro stop (Line 2). The giant Young Mao head sculpture is about 2 km south of it at the island’s tip, and sightseeing buggies run the length of the island.'}
-]}
+  ],
+  eats:[
+ {id:'eat-huogong',n:'🍜',opt:true,eat:true,name:'Huogongdian (Pozi Street)',zh:'火宫殿（坡子街总店）',lat:28.190048,lng:112.973951,blurb:'Changsha’s best-known old restaurant, on Pozi Street. Order a spread of small local snacks: stinky tofu, sugar-oil baba (糖油粑粑) and steamed dishes. The pin marks Pozi Street; the restaurant is along it.'},
+ {id:'eat-feidachu',n:'🍜',opt:true,eat:true,name:'Fei Da Chu',zh:'费大厨辣椒炒肉（坡子街店）',lat:28.190093,lng:112.973184,blurb:'Popular Hunan chain famous for one dish, chili-fried pork (辣椒炒肉), with rice. Queues at meal times; take a number and wander Pozi Street meanwhile.'},
+ {id:'eat-wenheyou',n:'🍜',opt:true,eat:true,name:'Super Wenheyou',zh:'超级文和友（海信广场）',lat:28.187097,lng:112.969727,blurb:'Retro 1980s Changsha food complex inside Hisense Plaza (海信广场), near the river, open until 2am. Crayfish, stinky tofu and dozens of stalls; free to wander, table queues can be long.'},
+ {id:'eat-chayan',n:'🧋',opt:true,eat:true,name:'Chayan Yuese',zh:'茶颜悦色（黄兴路步行街）',lat:28.183778,lng:112.976509,blurb:'Changsha’s famous milk-tea chain, only found around here. There are branches every few hundred metres; this one is near the south end of the street.'}
+  ]}
 };
 var DAY_KEY='changsha-walk-day';
 var DAY=(function(){try{var d=localStorage.getItem(DAY_KEY);return DAYS[d]?d:'today'}catch(e){return 'today'}})();
-var STOPS=DAYS[DAY].stops,EXTRAS=DAYS[DAY].extras;
-var ALL=STOPS.concat(EXTRAS);
+var HOTEL=DAYS[DAY].base,STOPS=DAYS[DAY].stops,EXTRAS=DAYS[DAY].extras,EATS=DAYS[DAY].eats||[];
+var ALL=STOPS.concat(EXTRAS,EATS);
 var BY={};ALL.concat([HOTEL]).forEach(function(s){BY[s.id]=s});
 
 /* ---------- WGS-84 (phone GPS) to GCJ-02 (Chinese map) ---------- */
@@ -1131,7 +1140,7 @@ function ui(){
   var next=null;for(var i=0;i<STOPS.length;i++){if(!S.visited[STOPS[i].id]){next=STOPS[i];break}}
   if(!next)next=HOTEL;curNext=next.id;
   var numEl=$('#nextNum');numEl.textContent=next.n;numEl.className='num'+(next===HOTEL?' home':'');
-  $('#nextName').textContent=next===HOTEL?'Back to the hotel':next.name;
+  $('#nextName').textContent=next===HOTEL?HOTEL.back:next.name;
   $('#nextZh').textContent=next.zh;
   $('#nextDone').hidden=next===HOTEL;
   if(me){
@@ -1139,12 +1148,12 @@ function ui(){
     $('#nextDist').textContent=d<40?'You’re here':fmtD(d);
     $('#nextTime').textContent=d<40?'':'about '+walkMin(d)+' min';
     $('#nextDir').textContent=d<40?'':'to the '+cardinal(b);
-    $('#btnHotel').textContent='Hotel '+fmtD(dist(me,HOTEL));
+    $('#btnHotel').textContent=HOTEL.short+' '+fmtD(dist(me,HOTEL));
   }else{
     $('#nextDist').textContent='–';
     $('#nextTime').textContent=watchId!=null?'Finding you…':'Start tracking to see distance';
     $('#nextDir').textContent='';
-    $('#btnHotel').textContent='Hotel';
+    $('#btnHotel').textContent=HOTEL.short;
   }
   ALL.forEach(function(s){
     var row=document.getElementById('row-'+s.id);if(!row)return;
@@ -1168,7 +1177,7 @@ function rowHtml(s){
   return '<article class="row'+(s.opt?' opt':'')+'" id="row-'+s.id+'"><span class="num">'+s.n+'</span><div><h3>'+s.name+'</h3><div class="zh">'+s.zh+'</div><p>'+s.blurb+'</p>'+
   '<div class="acts"><button class="chip" data-act="fly" data-id="'+s.id+'">Map</button><button class="chip" data-act="route" data-id="'+s.id+'">Route</button><button class="chip" data-act="card" data-id="'+s.id+'">Driver card</button><button class="chip" data-act="visit" data-id="'+s.id+'">Done</button></div></div><div class="d">–</div></article>';
 }
-$('#list').innerHTML=STOPS.map(rowHtml).join('')+'<h4 class="group">Worth a detour</h4>'+EXTRAS.map(rowHtml).join('')+
+$('#list').innerHTML=STOPS.map(rowHtml).join('')+'<h4 class="group">Worth a detour</h4>'+EXTRAS.map(rowHtml).join('')+(EATS.length?'<h4 class="group">Places to eat</h4>'+EATS.map(rowHtml).join(''):'')+
   '<p class="note">The dotted gold line shows the suggested order, not the street route. Tap Route for walking directions from where you are. Long-press anywhere on the map to route from or to that spot. Stops tick themselves off when you get within about 45 m.</p>';
 
 function toggleList(force){
@@ -1259,7 +1268,7 @@ function onPos(p){
   /* arrivals */
   if(acc<=80){
     ALL.forEach(function(s){
-      if(!S.visited[s.id]&&dist(me,s)<=45){S.visited[s.id]=Date.now();toast('Arrived at '+s.name);if(navigator.vibrate)navigator.vibrate([90,60,90]);refreshPins();save()}
+      if(!s.eat&&!S.visited[s.id]&&dist(me,s)<=45){S.visited[s.id]=Date.now();toast('Arrived at '+s.name);if(navigator.vibrate)navigator.vibrate([90,60,90]);refreshPins();save()}
     });
   }
 
@@ -1431,7 +1440,7 @@ function routeOSRM(a,b){
 
 var NAV={from:null,to:null,route:null,pending:false,lastReroute:0,offCount:0,curStep:-2,buzzed:-1,layer:L.layerGroup().addTo(map)};
 var navReq=0;
-function placeEnd(s){return s?{type:'place',lat:s.lat,lng:s.lng,label:s.id==='hotel'?'Hotel':s.name,zh:s.zh,id:s.id}:null}
+function placeEnd(s){return s?{type:'place',lat:s.lat,lng:s.lng,label:s.id==='hotel'?HOTEL.short:s.name,zh:s.zh,id:s.id}:null}
 function endLabel(e){return !e?'':e.type==='me'?'My location':e.label}
 function endLL(e){if(!e)return null;if(e.type==='me')return me?[me.lat,me.lng]:null;return[e.lat,e.lng]}
 function endWgs(e){if(e.type==='me'){if(!meRaw)return null;return S.fix?[meRaw.lat,meRaw.lng]:g2w(meRaw.lat,meRaw.lng)}return g2w(e.lat,e.lng)}
@@ -1547,7 +1556,7 @@ function openPicker(which){
   var h='<button class="opt" data-pick="me"'+(geoOK()?'':' disabled')+'><span class="num ic-me">◎</span><span>My location'+(geoOK()?'':'<small>Needs the page opened from an https link</small>')+'</span></button>'+
     '<button class="opt" data-pick="map"><span class="num ic-plain">✥</span><span>Pick on the map<small>Tap any spot</small></span></button>'+
     '<div class="opt-group">Your stops</div>';
-  [HOTEL].concat(STOPS,EXTRAS).forEach(function(s){
+  [HOTEL].concat(STOPS,EXTRAS,EATS).forEach(function(s){
     h+='<button class="opt" data-pick="place" data-id="'+s.id+'"><span class="num'+(s.id==='hotel'?' home':'')+(s.opt?' optn':'')+'">'+s.n+'</span><span>'+s.name+'<small>'+s.zh+'</small></span></button>';
   });
   $('#pickOpts').innerHTML=h;
@@ -1627,7 +1636,7 @@ document.querySelectorAll('[data-day]').forEach(function(b){b.addEventListener('
 /* ---------- boot ---------- */
 syncSettings();syncDay();drawTrail();ui();fitAll();
 var switched=null;try{switched=sessionStorage.getItem('changsha-walk-switched');sessionStorage.removeItem('changsha-walk-switched')}catch(e){}
-if(switched){toast('Showing '+DAYS[DAY].label.toLowerCase()+'’s walk');if(switched==='track'&&geoOK())startTracking()}
+if(switched){toast('Showing the '+DAYS[DAY].label+' walk');if(switched==='track'&&geoOK())startTracking()}
 else if(S.trail.some(function(g){return g.length}))toast('Your earlier walk is restored');
 if(!geoOK()){setStatus('blocked','No location here');showBanner(INSECURE_MSG,'bad','secure')}
 })();
