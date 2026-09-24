@@ -729,6 +729,9 @@ button,a{font:inherit;color:inherit}
 .seg button{border:0;background:none;padding:6px 12px;cursor:pointer;font-weight:600;font-size:13px}
 .seg button[aria-pressed="true"]{background:var(--gold);color:var(--gold-ink)}
 .menu-acts{display:flex;gap:8px;margin-top:12px}
+.daybar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;font-size:13.5px;color:var(--muted);font-weight:650}
+.daybar .seg{min-width:0}
+.daybar .seg button{color:var(--ink);white-space:nowrap}
 
 /* bottom sheet */
 .sheet{position:fixed;z-index:1000;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;background:var(--panel);border-radius:24px 24px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.22);padding:0 16px calc(env(safe-area-inset-bottom,0px) + 12px)}
@@ -900,6 +903,9 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
 
 <section class="sheet" id="sheet" aria-label="Walk guide">
   <button class="handle" id="handle" aria-label="Show all stops" aria-expanded="false" aria-controls="list"></button>
+  <div class="daybar"><span>Walk</span>
+    <div class="seg" role="group" aria-label="Which day’s walk"><button data-day="today" aria-pressed="true">Today</button><button data-day="tomorrow" aria-pressed="false">Tomorrow · Huangxing Rd</button></div>
+  </div>
   <div class="next">
     <div class="compass idle" id="compass" aria-hidden="true">
       <span class="n" id="northMark">N</span>
@@ -986,18 +992,34 @@ var RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matc
 
 /* ---------- places (GCJ-02, the datum Chinese maps use) ---------- */
 var HOTEL={id:'hotel',n:'H',name:'Wyndham Grand Plaza Royale Furongguo',zh:'长沙芙蓉国温德姆至尊豪廷大酒店',lat:28.1865751,lng:112.9860048,tel:'+86 731 8868 8888',blurb:'Your hotel, the start and end of the loop.'};
-var STOPS=[
+var DAYS={
+ today:{label:'Today',key:'changsha-night-walk-v1',stops:[
  {id:'tianxin',n:1,name:'Tianxin Pavilion',zh:'天心阁',lat:28.183687,lng:112.981369,blurb:'A pavilion on a surviving stretch of the old city wall, lit up at night. The park around it is free; the paid top section (¥32) may be closed this late.'},
  {id:'huangxing',n:2,name:'Huangxing Walking Street',zh:'黄兴南路步行街',lat:28.186413,lng:112.976319,blurb:'The main neon pedestrian strip. Grab a Chayan Yuese (茶颜悦色) tea, or black stinky tofu if you still have room.'},
  {id:'dufu',n:3,name:'Du Fu Riverside Pavilion',zh:'杜甫江阁',lat:28.185192,lng:112.968851,blurb:'Golden pavilion on the Xiang River, facing Orange Isle. Entry is a small fee checked by ID, so bring your passport. The riverside path is free.'},
  {id:'wenheyou',n:4,name:'Super Wenheyou',zh:'超级文和友（海信广场）',lat:28.187097,lng:112.969727,blurb:'Retro 1980s Changsha food complex inside Hisense Plaza (海信广场), open until 2am. Free to wander; table queues can be long.'},
  {id:'ifs',n:5,name:'Changsha IFS',zh:'长沙国金中心 IFS',lat:28.191892,lng:112.97693,blurb:'Upscale mall with giant art-toy sculptures on the rooftop. Malls here usually close around 10pm, so go earlier if it matters to you.'},
  {id:'jiefang',n:6,name:'Jiefang West Road',zh:'解放西路',lat:28.191095,lng:112.981611,blurb:'Changsha’s bar street. It gets busy late, so it works as the last stop before the hotel.'}
-];
-var EXTRAS=[
+],extras:[
  {id:'pozi',n:'+',opt:true,name:'Pozi Street',zh:'坡子街',lat:28.189685,lng:112.974006,blurb:'Snack street between Huangxing Road and the river, home of Huogongdian (火宫殿), the old-school stinky tofu institution.'},
  {id:'taiping',n:'+',opt:true,name:'Taiping Old Street',zh:'太平老街',lat:28.19515,lng:112.97181,blurb:'Restored old lane with snack stalls and small shops, a short detour north of the loop.'}
-];
+]},
+ tomorrow:{label:'Tomorrow',key:'changsha-night-walk-v1-tomorrow',stops:[
+ {id:'hx-street',n:1,name:'Huangxing Road Pedestrian Street',zh:'黄兴南路步行街',lat:28.186413,lng:112.976319,blurb:'The day’s base: the main shopping strip. Walk it south first; the stops below circle the lanes on either side.'},
+ {id:'hx-nanmen',n:2,name:'Nanmenkou & the Huang Xing statue',zh:'南门口',lat:28.182875,lng:112.976225,blurb:'The south end of the street, where the old south city gate stood. The bronze statue of Huang Xing, the revolutionary the road is named after, is here, and the side streets are full of local snack stalls.'},
+ {id:'hx-wenmiao',n:3,name:'Xiwenmiaoping',zh:'西文庙坪',lat:28.184732,lng:112.971991,blurb:'A quiet old neighbourhood with a stone memorial archway left over from the city’s old Confucian school. It’s a short step into pre-mall Changsha.'},
+ {id:'hx-huogong',n:4,name:'Pozi Street & Huogongdian',zh:'坡子街 火宫殿',lat:28.190048,lng:112.973951,blurb:'Snack street, home of Huogongdian (火宫殿), the century-old restaurant famous for stinky tofu and sugar-oil baba (糖油粑粑).'},
+ {id:'hx-jiayi',n:5,name:'Taiping Street & Jia Yi’s Former Residence',zh:'太平街 贾谊故居',lat:28.192639,lng:112.971847,blurb:'Restored old street of grey-brick shops. Halfway along is the former home of Jia Yi, a Han-dynasty scholar and poet, now a small courtyard museum.'},
+ {id:'hx-hualong',n:6,name:'Hualongchi & Baiguoyuan lanes',zh:'化龙池 白果园',lat:28.187328,lng:112.977246,blurb:'Narrow old lanes just east of the main street, with small bars, cafés and old stone-framed houses. A good last stop on the way back to the hotel.'}
+],extras:[
+ {id:'hx-jiandu',n:'+',opt:true,name:'Changsha Bamboo Slips Museum',zh:'长沙简牍博物馆',lat:28.184904,lng:112.983172,blurb:'Museum of ancient bamboo writing slips dug up in central Changsha, close to the hotel. Daytime hours only and usually closed on Mondays; bring your passport.'},
+ {id:'hx-chaozong',n:'+',opt:true,name:'Chaozong Street',zh:'潮宗街',lat:28.203101,lng:112.973612,blurb:'Granite-paved historic street about 20 minutes’ walk north, lined with cafés and restored old buildings. Quieter than Taiping Street.'},
+ {id:'hx-juzizhou',n:'+',opt:true,name:'Orange Isle',zh:'橘子洲',lat:28.195153,lng:112.962324,blurb:'Long island in the Xiang River, free to enter. The pin is the Juzizhou metro stop (Line 2). The giant Young Mao head sculpture is about 2 km south of it at the island’s tip, and sightseeing buggies run the length of the island.'}
+]}
+};
+var DAY_KEY='changsha-walk-day';
+var DAY=(function(){try{var d=localStorage.getItem(DAY_KEY);return DAYS[d]?d:'today'}catch(e){return 'today'}})();
+var STOPS=DAYS[DAY].stops,EXTRAS=DAYS[DAY].extras;
 var ALL=STOPS.concat(EXTRAS);
 var BY={};ALL.concat([HOTEL]).forEach(function(s){BY[s.id]=s});
 
@@ -1021,7 +1043,7 @@ function fmtT(ms){var s=Math.floor(ms/1000),h=Math.floor(s/3600),mi=Math.floor(s
 function amap(s){return 'https://uri.amap.com/navigation?to='+s.lng+','+s.lat+','+encodeURIComponent(s.zh)+'&mode=walk&coordinate=gaode&callnative=1&src=changsha-night-walk'}
 
 /* ---------- state ---------- */
-var KEY='changsha-night-walk-v1';
+var KEY=DAYS[DAY].key;
 var DEF={visited:{},trail:[],walked:0,elapsed:0,labels:'en',fix:true,night:true,wake:true};
 function load(){try{var r=localStorage.getItem(KEY);return r?JSON.parse(r):{}}catch(e){return{}}}
 var S=Object.assign({},DEF,load());
@@ -1341,7 +1363,7 @@ $('#btnGpx').addEventListener('click',function(){
   if(!segs.length){toast('No track recorded yet');return}
   var body=segs.map(function(seg){return '<trkseg>'+seg.map(function(p){return '<trkpt lat="'+p[0]+'" lon="'+p[1]+'"><time>'+new Date(p[2]).toISOString()+'</time></trkpt>'}).join('')+'</trkseg>'}).join('');
   var gpx='<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Changsha Night Walk" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>Changsha night walk</name>'+body+'</trk></gpx>';
-  try{var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([gpx],{type:'application/gpx+xml'}));a.download='changsha-night-walk.gpx';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)}
+  try{var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([gpx],{type:'application/gpx+xml'}));a.download='changsha-walk-'+DAY+'.gpx';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)}
   catch(e){toast('This browser can’t save files from here')}
 });
 $('#btnReset').addEventListener('click',function(){
@@ -1585,9 +1607,28 @@ $('#swapBtn').addEventListener('click',function(){var t=NAV.from;NAV.from=NAV.to
 $('#dirSteps').addEventListener('click',function(){var c=dirEl().classList.toggle('compact');this.textContent=c?'Show steps':'Hide steps';this.setAttribute('aria-expanded',String(!c))});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){if(!$('#picker').hidden)closePicker();else if(mapPick){endMapPick();renderDir()}}});
 
+/* ---------- day switch ---------- */
+function syncDay(){document.querySelectorAll('[data-day]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-day')===DAY))})}
+document.querySelectorAll('[data-day]').forEach(function(b){b.addEventListener('click',function(){
+  var d=b.getAttribute('data-day');if(d===DAY||!DAYS[d])return;
+  var wasTracking=watchId!=null;
+  if(wasTracking)stopTracking();
+  clearTimeout(saveT);
+  try{
+    localStorage.setItem(KEY,JSON.stringify(S));
+    var other={};try{other=JSON.parse(localStorage.getItem(DAYS[d].key))||{}}catch(e){}
+    localStorage.setItem(DAYS[d].key,JSON.stringify(Object.assign(other,{labels:S.labels,fix:S.fix,night:S.night,wake:S.wake})));
+    localStorage.setItem(DAY_KEY,d);
+    sessionStorage.setItem('changsha-walk-switched',wasTracking?'track':'1');
+  }catch(e){toast('This browser can’t save the choice');return}
+  location.reload();
+})});
+
 /* ---------- boot ---------- */
-syncSettings();drawTrail();ui();fitAll();
-if(S.trail.some(function(g){return g.length}))toast('Your earlier walk is restored');
+syncSettings();syncDay();drawTrail();ui();fitAll();
+var switched=null;try{switched=sessionStorage.getItem('changsha-walk-switched');sessionStorage.removeItem('changsha-walk-switched')}catch(e){}
+if(switched){toast('Showing '+DAYS[DAY].label.toLowerCase()+'’s walk');if(switched==='track'&&geoOK())startTracking()}
+else if(S.trail.some(function(g){return g.length}))toast('Your earlier walk is restored');
 if(!geoOK()){setStatus('blocked','No location here');showBanner(INSECURE_MSG,'bad','secure')}
 })();
 </script>
