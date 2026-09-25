@@ -933,6 +933,27 @@ body.routing path.route{stroke-opacity:.35;stroke-width:3}/* the suggested-order
 .num.ic-plain{background:var(--panel-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
 .pickbar{position:fixed;z-index:1200;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);margin:0 auto;max-width:520px;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:var(--panel);box-shadow:var(--shadow);font-weight:650}
 .pickbar span{flex:1}
+/* WP3: compass dial. The ring carrying N turns by -heading and the arrow by bearing-heading, so N always marks north
+   and the arrow always means the same thing; with no heading the dial is north-up */
+button.compass{padding:0;cursor:pointer;color:inherit;font:inherit;-webkit-appearance:none;appearance:none}
+.compass .ring{position:absolute;inset:0;border-radius:50%;transition:transform .3s ease-out;pointer-events:none}
+.compass .ring .n{left:50%;right:auto;width:14px;margin-left:-7px;transition:transform .3s ease-out}/* the letter stays upright as the ring turns */
+.compass[aria-pressed="true"]{border-color:var(--gold);box-shadow:inset 0 0 0 2px var(--gold)}
+/* WP3: GPS gone quiet */
+.me.stale{opacity:.45}
+.meta b.stale{color:var(--muted)}
+/* WP3: straight-line guidance, off-route arrow, arrival chaining, retry and detour hints */
+path.crow{stroke:var(--gold);stroke-dasharray:2 9;stroke-width:4;stroke-linecap:round;fill:none}
+.nav-now{flex-wrap:wrap}
+.nav-now .nn{display:contents}
+.nav-now .nn>span:not(.in){flex:1 1 0;min-width:0}
+.nav-now .arr{width:30px;height:30px;flex:none;transition:transform .3s ease-out}
+.nav-now .chip{flex:1 0 100%;justify-content:center;min-height:44px;background:#fff;color:#12306b;border-color:transparent;font-weight:700}
+.chip.primary{background:var(--gold);color:var(--gold-ink);border-color:transparent}
+.dir-msg .chip{margin-left:8px;vertical-align:middle}
+#sumTime{position:relative;display:inline-flex;flex-direction:column;font-size:13px;line-height:1.25}
+#sumTime .sep{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.banner button.act{display:flex;width:max-content;align-items:center;min-height:44px;margin:8px 0 0;padding:0 14px;border-radius:10px;background:var(--gold);color:var(--gold-ink);text-decoration:none;font-weight:700}
 @media (min-width:700px){.dir{bottom:12px;border-radius:24px;left:12px;right:auto;width:420px;margin:0}}
 
 /* offline and install (WP4) */
@@ -986,6 +1007,7 @@ body.routing path.route{stroke-opacity:.35;stroke-width:3}/* the suggested-order
   </div>
   <label class="opt-row"><span>Night mode<small>Dark screen and dimmed map for walking after dark.</small></span><input type="checkbox" id="optNight"></label>
   <label class="opt-row"><span>Keep screen on<small>Phones pause web GPS when the screen locks.</small></span><input type="checkbox" id="optWake"></label>
+  <label class="opt-row"><span>Spoken directions<small>Reads each turn aloud while you follow a walking route.</small></span><input type="checkbox" id="optVoice"></label>
   <label class="opt-row"><span>China map offset fix<small>Chinese maps are shifted from raw GPS by about 600 m here. Turn this off only if your blue dot sits consistently off the streets.</small></span><input type="checkbox" id="optFix"></label>
   <div class="menu-acts">
     <button class="btn small" id="btnGpx">Export track (GPX)</button>
@@ -1007,10 +1029,10 @@ body.routing path.route{stroke-opacity:.35;stroke-width:3}/* the suggested-order
     <div class="seg" role="group" aria-label="Which day’s walk"><button data-day="today" aria-pressed="true">Hotel loop</button><button data-day="tomorrow" aria-pressed="false">Huangxing Rd</button></div>
   </div>
   <div class="next">
-    <div class="compass idle" id="compass" aria-hidden="true">
-      <span class="n" id="northMark">N</span>
-      <svg id="arrow" viewBox="0 0 24 24"><path d="M12 2.2 19.2 20.6 12 16.9 4.8 20.6Z" fill="currentColor"/></svg>
-    </div>
+    <button class="compass idle" id="compass" type="button" aria-pressed="false" aria-label="Use the phone compass">
+      <span class="ring" id="compassRing" aria-hidden="true"><span class="n" id="northMark">N</span></span>
+      <svg id="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2 19.2 20.6 12 16.9 4.8 20.6Z" fill="currentColor"/></svg>
+    </button>
     <div style="min-width:0">
       <div class="next-title"><span class="num" id="nextNum">1</span><h2 id="nextName">Tianxin Pavilion</h2></div>
       <div class="zh" id="nextZh" lang="zh-CN">天心阁</div>
@@ -1137,7 +1159,7 @@ BY.home=HOME;
 /* everything with a pin: on the Huangxing Rd walk the hotel gets its own H pin */
 var PINNED=ALL.concat([HOTEL],DAY!=='today'?[HOME]:[]);
 function isBase(s){return s===HOTEL||s===HOME}
-var CARRY=['labels','fix','night','wake'];
+var CARRY=['labels','fix','night','wake','voice'];
 function carry(){var o={};CARRY.forEach(function(k){o[k]=S[k]});return o}
 
 /* ---------- WGS-84 (phone GPS) to GCJ-02 (Chinese map) ---------- */
@@ -1157,17 +1179,40 @@ function cardinal(b){return DIRS[Math.round(b/45)%8]}
 function fmtD(m){var r=Math.round(m/10)*10;return r<1000?r+' m':(m/1000).toFixed(1)+' km'}
 function walkMin(m){return Math.max(1,Math.round(m*1.25/78))}
 function fmtT(ms){var s=Math.floor(ms/1000),h=Math.floor(s/3600),mi=Math.floor(s%3600/60),se=s%60;return h?h+':'+String(mi).padStart(2,'0')+':'+String(se).padStart(2,'0'):mi+':'+String(se).padStart(2,'0')}
+/* arrival clock in China time, whatever the phone's own time zone */
+var CLK=(function(){try{return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hourCycle:'h23'})}catch(e){return null}})();
+function cstClock(t){try{return CLK?CLK.format(new Date(t)):''}catch(e){return ''}}
 function amap(s){return 'https://uri.amap.com/navigation?to='+s.lng+','+s.lat+','+encodeURIComponent(s.zh)+'&mode=walk&coordinate=gaode&callnative=1&src=changsha-night-walk'}
 
 /* ---------- state ---------- */
 var KEY=DAYS[DAY].key;
-var DEF={visited:{},trail:[],walked:0,elapsed:0,labels:'en',fix:true,night:true,wake:true};
-function load(){try{var r=localStorage.getItem(KEY);return r?JSON.parse(r):{}}catch(e){return{}}}
+var DEF={visited:{},trail:[],walked:0,elapsed:0,labels:'en',fix:true,night:true,wake:true,tracking:false,voice:false};
+function isObj(v){return !!v&&typeof v==='object'&&!Array.isArray(v)}
+function load(){try{var r=localStorage.getItem(KEY),o=r?JSON.parse(r):{};return isObj(o)?o:{}}catch(e){return{}}}
 var S=Object.assign({},DEF,load());
-if(!Array.isArray(S.trail))S.trail=[];
-var saveT=null;function save(){clearTimeout(saveT);saveT=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},500)}
+/* a damaged save must never stop the app: keep what is usable, reset the rest (valid saves pass through unchanged) */
+(function(){
+  function num(v){return typeof v==='number'&&isFinite(v)}
+  if(!isObj(S.visited))S.visited={};
+  S.trail=(Array.isArray(S.trail)?S.trail:[]).filter(Array.isArray).map(function(g){return g.filter(function(p){return Array.isArray(p)&&num(p[0])&&num(p[1])&&num(p[2])})});
+  ['walked','elapsed'].forEach(function(k){if(!num(S[k])||S[k]<0)S[k]=0});
+  ['fix','night','wake','tracking','voice'].forEach(function(k){if(typeof S[k]!=='boolean')S[k]=DEF[k]});
+  if(S.labels!=='en'&&S.labels!=='zh')S.labels=DEF.labels;
+})();
+/* flush writes now (app switch, freeze, pagehide); save() batches ordinary changes */
+var saveT=null;
+function flush(){
+  clearTimeout(saveT);saveT=null;
+  if(sessionAt){var n=Date.now();S.elapsed+=n-sessionAt;sessionAt=n}
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){if(!flush.w){flush.w=1;toast('Phone storage is full, so your track isn’t being saved')}}
+}
+function save(){clearTimeout(saveT);saveT=setTimeout(flush,500)}
+function saveSoon(){if(!saveT)saveT=setTimeout(flush,5000)}/* per GPS fix: at most every 5 s */
 
 var watchId=null,sessionAt=null,me=null,meRaw=null,acc=null,gpsHeading=null,compassHeading=null,compassOn=false,follow=true,firstFix=true,curNext=null,prevNext=null,wakeLock=null;
+/* fix quality (WP3.4): time of the last used fix, of the last watch (re)start, of tracking start; outlier gate; arrival candidates */
+var lastFixAt=0,lastWatchAt=0,trackStartAt=0,hadGood=false,lastBetterAt=0,cand={},undone={},lastDragAt=0,prevFixT=0,locMsgAt=0;
+var GEO_OPTS={enableHighAccuracy:true,maximumAge:3000,timeout:30000};
 
 /* ---------- map ---------- */
 var map=L.map('map',{zoomControl:false,attributionControl:true,zoomAnimation:!RM,fadeAnimation:!RM,markerZoomAnimation:!RM,inertia:!RM});
@@ -1237,7 +1282,10 @@ PINNED.forEach(function(s){
 var openPop=null;
 map.on('popupopen',function(e){
   openPop=e.popup;placeToast();/* a toast that is up moves to the top slot, out of the band this popup is panned into */
+  if(!banner.hidden&&banner.dataset.id==='wake')hideBanner();/* a one-time hint, already seen: the place being opened matters more */
   var bottom=dirEl().hidden?(sheet.hidden?0:sheetH()):dirH(),top=Math.max(70+SAT,toastTop()+6),o=e.popup.options;
+  /* below a banner that is up (resume, location, offline), when that still leaves the popup room for its chips */
+  var bt=topOcc();if(bt>top&&innerHeight-bottom-10-bt-40>=160)top=bt;
   o.autoPanPaddingTopLeft=L.point(10,top);
   /* the pin itself hangs 22 px below the popup's tip (25 for the next stop), so a popup with room to spare keeps 16 px more clear of the panel below */
   o.autoPanPaddingBottomRight=L.point(66,bottom+10+16);
@@ -1314,8 +1362,8 @@ function trailAppend(){
   var p=seg[seg.length-1];liveLine.addLatLng(toMap(p[0],p[1]));
 }
 
-function fitAll(){
-  var pts=ALL.concat([HOTEL]).map(function(p){return[p.lat,p.lng]});
+function fitAll(){/* the loop only: far extras (Chaozong, Orange Isle) would push this out to z14 */
+  var pts=STOPS.concat([HOTEL]).map(function(p){return[p.lat,p.lng]});
   map.fitBounds(L.latLngBounds(pts),{paddingTopLeft:[24,70+SAT],paddingBottomRight:[24,sheetH()+16],maxZoom:16,animate:false});
 }
 
@@ -1377,16 +1425,89 @@ function setStatus(s,text,spoken){
 }
 
 function heading(){return compassHeading!=null?compassHeading:gpsHeading}
-function setFollow(v){follow=v;$('#btnLocate').setAttribute('aria-pressed',String(watchId!=null&&v))}
+function setFollow(v){follow=v;if(!v)frameLate=false;syncLocate()}
+/* Locate shows pressed only while the map really follows the dot: tracking, follow on, and no popup holding it (followPan) */
+function syncLocate(){$('#btnLocate').setAttribute('aria-pressed',String(watchId!=null&&follow&&!openPop))}
 
+/* angles are tracked continuously (359° -> 1° is +2°, not -358°), so the CSS transitions never spin the long way round */
+var arrowRot=0,coneRot=0,ringRot=0,navArrRot=0;
+function unwrap(p,t){return p+((((t-p)%360)+540)%360-180)}
 function updateArrow(){
   var next=BY[curNext],comp=$('#compass'),h=heading();
-  $('#northMark').hidden=h!=null;
-  if(!me||!next){comp.classList.add('idle');$('#arrow').style.transform='rotate(0deg)';return}
-  comp.classList.remove('idle');
-  var b=bearing(me,next),rot=h==null?b:b-h;
-  $('#arrow').style.transform='rotate('+rot+'deg)';
-  if(meMarker){var el=meMarker.getElement();if(el){var m=el.querySelector('.me');m.classList.toggle('has-h',h!=null);if(h!=null)m.querySelector('.cone').style.transform='rotate('+h+'deg)'}}
+  /* one frame, always shown: the ring with N turns by -heading (north-up when there is none), the arrow by bearing-heading */
+  ringRot=unwrap(ringRot,h==null?0:-h);$('#compassRing').style.transform='rotate('+ringRot.toFixed(1)+'deg)';$('#northMark').style.transform='rotate('+(-ringRot).toFixed(1)+'deg)';
+  if(!me||!next){comp.classList.add('idle');arrowRot=0;$('#arrow').style.transform='rotate(0deg)'}
+  else{
+    comp.classList.remove('idle');
+    var b=bearing(me,next);arrowRot=unwrap(arrowRot,h==null?b:b-h);
+    $('#arrow').style.transform='rotate('+arrowRot.toFixed(1)+'deg)';
+  }
+  if(meMarker){var el=meMarker.getElement();if(el){var m=el.querySelector('.me');m.classList.toggle('has-h',h!=null);if(h!=null){coneRot=unwrap(coneRot,h);m.querySelector('.cone').style.transform='rotate('+coneRot.toFixed(1)+'deg)'}}}
+  if(NAV&&!dirEl().hidden)updateNavArrow();/* the straight-line / back-to-route arrow in the route panel turns with the phone too */
+}
+
+/* ---------- framing (WP3.2) ---------- */
+/* the part of the map a bottom panel covers, the top edge of the clear map (under the top bar, or under a banner that
+   is showing: a wake-lock hint or a GPS warning must never sit on the dot or the next stop), and a centre that sits in
+   the middle of what is left between them */
+function bottomOcc(){return !dirEl().hidden?dirH():sheet.hidden?0:sheetH()}
+function topOcc(){var t=56+SAT;if(!banner.hidden){var b=banner.getBoundingClientRect().bottom;if(b>0)t=Math.max(t,Math.ceil(b)+12)}return t}
+function centerAbove(ll,z){z=z==null?map.getZoom():z;return map.unproject(map.project(ll,z).add([0,Math.round((bottomOcc()-topOcc())/2)]),z)}
+/* Leaflet silently drops a view change made while a zoom animation is running (a route fit right after the first-fix
+   framing, a Locate tap mid-zoom): run it when that animation ends */
+function afterZoomAnim(fn){if(map._animatingZoom)map.once('zoomend',fn);else fn()}
+/* first fix: show where you are and where you are going (the next stop, or the route's destination) */
+var framedAt=0;
+function frameTarget(){var n=BY[curNext];return !dirEl().hidden&&NAV.to&&NAV.to.type!=='me'?endLL(NAV.to):n?[n.lat,n.lng]:null}
+function frameNext(){
+  if(!me)return;
+  if(!dirEl().hidden&&NAV.route&&NAV.from&&NAV.from.type!=='me')return;/* looking at a place-to-place route: leave it */
+  framedAt=Date.now();
+  afterZoomAnim(function(){
+    var t=frameTarget(),here=[me.lat,me.lng],top=Math.max(70+SAT,topOcc()+12),bot=bottomOcc()+24;
+    /* far away, or too little clear map between a banner and the sheet to fit two points: just the dot */
+    if(!t||dist(me,{lat:t[0],lng:t[1]})>2500||map.getSize().y-top-bot<40){map.setView(centerAbove(here,17),17,{animate:!RM});return}
+    map.fitBounds(L.latLngBounds([here,t]),{paddingTopLeft:[24,top],paddingBottomRight:[70,bot],maxZoom:17,animate:!RM});
+  });
+}
+/* follow with a dead zone: only re-centre when the dot leaves the middle half of the visible map (below a banner, if one shows) */
+function followPan(){
+  if(openPop)return;/* on hold while a popup is open (below) */
+  var pt=map.latLngToContainerPoint([me.lat,me.lng]),W=map.getSize().x,H=innerHeight-bottomOcc(),T=banner.hidden?0:topOcc();
+  if(pt.x<W*.25||pt.x>W*.75||pt.y<T+(H-T)*.25||pt.y>T+(H-T)*.75)map.panTo(centerAbove([me.lat,me.lng]),{animate:!RM});
+}
+/* a banner that shows up once the map is framed (a late wake-lock refusal, lost GPS) must not cover the dot: soon after
+   the first fix frame the dot and the next stop again below it, later just pan the dot into the clear */
+function bannerOverDot(){
+  if(banner.hidden||!me||watchId==null||!follow||firstFix||openPop)return;
+  afterZoomAnim(function(){
+    if(banner.hidden||!me||!follow)return;
+    var recent=Date.now()-framedAt<15000,t=recent&&frameTarget(),pts=[[me.lat,me.lng]].concat(t?[t]:[]),top=topOcc();
+    if(!pts.some(function(p){return map.latLngToContainerPoint(p).y<top}))return;
+    if(recent)frameNext();else followPan();
+  });
+}
+if(window.ResizeObserver)new ResizeObserver(bannerOverDot).observe(banner);/* fires when it shows, and when it changes size */
+/* a popup the user opens is panned into view by Leaflet, which can push the dot under the buttons; a follow pan on the
+   next fix would then throw the popup off the screen, chips and all. So follow is on hold while a popup is open (Locate
+   shows it as off) and picks up again, with at most one pan, when it closes (not when another popup opens straight away:
+   a tap on another pin closes this one first). */
+var resumeT=0,frameLate=false;
+map.on('popupopen',function(){clearTimeout(resumeT);syncLocate()});
+map.on('popupclose',function(){
+  syncLocate();clearTimeout(resumeT);
+  resumeT=setTimeout(function(){
+    if(openPop||!follow||!me||watchId==null||firstFix)return;
+    if(frameLate){frameLate=false;frameNext()}else afterZoomAnim(followPan);
+  },0);
+});
+function userMoved(){lastDragAt=Date.now()}
+
+/* no first fix yet: after 15 s say so, with a running clock, instead of an endless "Finding you…" */
+function lookingText(){var t=Date.now()-trackStartAt;return t>15000?'Still looking for GPS ('+fmtT(t)+'). Step away from tall buildings.':'Finding you…'}
+function setStale(v){
+  $('#nextDist').classList.toggle('stale',v);
+  var el=meMarker&&meMarker.getElement(),m=el&&el.querySelector('.me');if(m)m.classList.toggle('stale',v);
 }
 
 function updateStats(){
@@ -1411,7 +1532,7 @@ function ui(){
     $('#btnHotel').innerHTML='Hotel <small>'+fmtD(dist(me,HOME))+'</small>';
   }else{
     $('#nextDist').textContent='–';
-    $('#nextTime').textContent=watchId!=null?'Finding you…':'Track to see distance';
+    $('#nextTime').textContent=watchId!=null?lookingText():'Track to see distance';
     $('#nextDir').textContent='';
     $('#btnHotel').textContent='Hotel';
   }
@@ -1429,7 +1550,7 @@ function ui(){
   if(resume)tb.setAttribute('aria-label','Resume tracking');else tb.removeAttribute('aria-label');
   tb.classList.toggle('on',watchId!=null);
   $('#hint').textContent=watchId!=null?'Keep this page open while you walk. Phones pause web GPS when the screen locks.':'Tap Start tracking, then allow location. Your track and done stops stay on this phone.';
-  $('#btnLocate').setAttribute('aria-pressed',String(watchId!=null&&follow));
+  syncLocate();
   if(prevNext!==curNext){prevNext=curNext;refreshPins()}
   updateStats();updateArrow();
 }
@@ -1528,8 +1649,8 @@ function toggleVisit(id){
   toast((S.visited[id]?'Marked ':'Unmarked ')+(s.short||s.name)+(S.visited[id]?' done':''),'Undo',function(){toggleVisit(id)});
 }
 function flyTo(id){
-  var s=BY[id];if(!s)return;setFollow(false);toggleList(false);
-  var c=centerAbove([s.lat,s.lng],17);
+  var s=BY[id];if(!s)return;setFollow(false);userMoved();toggleList(false);
+  var c=centerAbove([s.lat,s.lng],17);/* in the middle of the map that the sheet leaves visible, not behind the sheet's edge */
   if(RM)map.setView(c,17);else map.flyTo(c,17,{duration:.6});
   setTimeout(function(){markers[id].openPopup()},RM?0:650);ui();
 }
@@ -1574,58 +1695,88 @@ function startTracking(){
   if(!geoOK()){showBanner(INSECURE_MSG,'bad','secure');setStatus('blocked','No location here');return}
   var last=S.trail[S.trail.length-1];if(!last||last.length)S.trail.push([]);
   sessionAt=Date.now();setFollow(true);firstFix=true;
+  trackStartAt=lastWatchAt=Date.now();lastFixAt=0;prevFixT=0;
+  S.tracking=true;save();/* remembered, so a reload or a discarded tab picks tracking up again */
+  if(!startTracking.p){startTracking.p=1;try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){})}catch(e){}}
   setStatus('search','Finding you…');
-  watchId=navigator.geolocation.watchPosition(onPos,onErr,{enableHighAccuracy:true,maximumAge:3000,timeout:30000});
+  watchId=navigator.geolocation.watchPosition(onPos,onErr,GEO_OPTS);
   if(S.wake)setWake(true);
+  if(NAV.pending)setDirMsg('Waiting for your location…');
   ui();
 }
 function stopTracking(){
   if(watchId!=null)navigator.geolocation.clearWatch(watchId);
-  watchId=null;
+  watchId=null;S.tracking=false;
   if(sessionAt){S.elapsed+=Date.now()-sessionAt;sessionAt=null}
-  setWake(false);setStatus('off','GPS off');save();ui();
+  setStale(false);setWake(false);setStatus('off','GPS off');save();ui();
+}
+/* a watch that has gone quiet (backgrounded, screen lock) is replaced rather than trusted */
+function rewatch(){
+  if(watchId==null)return;
+  try{navigator.geolocation.clearWatch(watchId)}catch(e){}
+  watchId=navigator.geolocation.watchPosition(onPos,onErr,GEO_OPTS);lastWatchAt=Date.now();
+}
+/* tracking started by a tap also turns the compass on in that same tap (iOS only asks for motion access inside a tap) */
+function startByTap(){if(!compassOn)autoCompass();startTracking()}
+function arrive(s){
+  delete cand[s.id];S.visited[s.id]=Date.now();if(S.target===s.id)delete S.target;
+  /* Undo, because an early tick moves "next" on; the toast itself is what gets announced */
+  toast('Arrived at '+(s.short||s.name),'Undo',function(){undone[s.id]=1;toggleVisit(s.id)});
+  if(navigator.vibrate)navigator.vibrate([90,60,90]);refreshPins();save();
 }
 function onPos(p){
-  var c=p.coords;meRaw={lat:c.latitude,lng:c.longitude};acc=c.accuracy;
-  var spd=typeof c.speed==='number'?c.speed:null;
+  var c=p.coords,now=Date.now(),a=c.accuracy;
+  /* outlier gate: once a good fix (≤30 m) has been seen, a coarse one (>100 m, cell or Wi-Fi) is ignored for the dot,
+     arrivals and routing, unless nothing better has come for 20 s */
+  if(a<=30)hadGood=true;
+  if(hadGood&&a>100&&now-lastBetterAt<20000)return;
+  if(a<=100)lastBetterAt=now;
+  lastFixAt=now;setStale(false);
+  meRaw={lat:c.latitude,lng:c.longitude};acc=a;
+  var spd=typeof c.speed==='number'&&!isNaN(c.speed)?c.speed:null;
   if(typeof c.heading==='number'&&!isNaN(c.heading)&&spd!=null&&spd>0.6)gpsHeading=c.heading;else if(spd!=null&&spd<0.3)gpsHeading=null;
   var m=toMap(meRaw.lat,meRaw.lng);me={lat:m[0],lng:m[1]};
-  if(banner.dataset.id==='gps'||banner.dataset.id==='perm')hideBanner();
+  if(banner.dataset.id==='gps'||banner.dataset.id==='perm'){hideBanner();locMsgAt=now}/* (see setWake) */
 
-  /* track */
+  /* track: only walking counts (not GPS wander at a food stall, not a taxi), and a long gap starts a new segment */
   if(acc<=50){
     var seg=S.trail[S.trail.length-1];if(!seg){seg=[];S.trail.push(seg)}
-    var t=p.timestamp||Date.now(),pt=[+meRaw.lat.toFixed(7),+meRaw.lng.toFixed(7),t],last=seg[seg.length-1];
+    var t=p.timestamp||now,pt=[+meRaw.lat.toFixed(7),+meRaw.lng.toFixed(7),t],last=seg[seg.length-1];
     if(!last){seg.push(pt)}
     else{
-      var d=dist({lat:last[0],lng:last[1]},meRaw),dt=Math.max(1,(t-last[2])/1000);
-      if(d>=Math.max(6,acc*0.4)){
-        if(d/dt<5){S.walked+=d;seg.push(pt);trailAppend()}
-        else{S.trail.push([pt])}
+      var d=dist({lat:last[0],lng:last[1]},meRaw),dt=Math.max(1,(t-last[2])/1000),gap=prevFixT?(t-prevFixT)/1000:dt;
+      if(gap>120)S.trail.push([pt]);/* no fix for 2 min (screen locked, GPS lost): never a straight line across blocks */
+      else if(d>=Math.max(8,acc*0.6)&&(spd==null||spd>0.4)){
+        if(d/dt<3){S.walked+=d;seg.push(pt);trailAppend()}
+        else{S.trail.push([pt])}/* faster than walking: a jump or a ride, not walked distance */
       }
     }
     if(seg.length>5000)seg.splice(0,seg.length-5000);
-    save();
+    prevFixT=t;saveSoon();
   }
 
-  /* arrivals */
-  if(acc<=80){
-    ALL.forEach(function(s){
-      if(!s.eat&&!S.visited[s.id]&&dist(me,s)<=45){S.visited[s.id]=Date.now();toast('Arrived at '+s.name);if(navigator.vibrate)navigator.vibrate([90,60,90]);refreshPins();save()}
-    });
-  }
+  /* arrivals, never for places to eat: two good fixes at least 5 s apart within 30 m (plus up to 20 m for accuracy),
+     or one very good fix within 20 m */
+  ALL.forEach(function(s){
+    if(s.eat||S.visited[s.id])return;
+    var d=dist(me,s);
+    if(undone[s.id]){if(d>60)delete undone[s.id];else return}/* an Undone arrival stays undone until the walker has left */
+    if(d<=20&&acc<=20){arrive(s);return}
+    if(acc<=35&&d<=30+Math.min(acc,20)){if(!cand[s.id])cand[s.id]=now;else if(now-cand[s.id]>=5000)arrive(s)}
+    else delete cand[s.id];
+  });
 
   /* marker */
-  var ll=[me.lat,me.lng];
+  var here=[me.lat,me.lng];
   if(!meMarker){
-    meMarker=L.marker(ll,{icon:L.divIcon({className:'pin-wrap',html:'<div class="me"><div class="cone"></div><div class="dot"></div></div>',iconSize:[44,44],iconAnchor:[22,22]}),interactive:false,keyboard:false,zIndexOffset:1000}).addTo(map);
-    accCircle=L.circle(ll,{radius:acc,className:'acc',interactive:false}).addTo(map);
-  }else{meMarker.setLatLng(ll);accCircle.setLatLng(ll).setRadius(acc)}
+    meMarker=L.marker(here,{icon:L.divIcon({className:'pin-wrap',html:'<div class="me"><div class="cone"></div><div class="dot"></div></div>',iconSize:[44,44],iconAnchor:[22,22]}),interactive:false,keyboard:false,zIndexOffset:1000}).addTo(map);
+    accCircle=L.circle(here,{radius:acc,className:'acc',interactive:false}).addTo(map);
+  }else{meMarker.setLatLng(here);accCircle.setLatLng(here).setRadius(acc)}
   var q=acc<=20?'good':acc<=50?'fair':'poor',ra=Math.max(5,Math.round(acc/5)*5);
   setStatus(q,'GPS ±'+ra+' m',{good:'Good',fair:'Fair',poor:'Weak'}[q]+' GPS signal, accurate to about '+ra+' m');
-  ui();/* first, so the sheet has its tracking height before the map is framed around it */
-  if(firstFix){firstFix=false;var z=Math.max(map.getZoom(),17);map.setView(centerAbove(ll,z),z,{animate:!RM})}
-  else if(follow)map.panTo(centerAbove(ll),{animate:!RM});
+  ui();
+  if(firstFix){firstFix=false;frameLate=!!openPop;if(!openPop)frameNext()}/* a popup is being read: frame when it closes */
+  else if(follow)followPan();
   if(NAV.pending)computeRoute();else updateNav();
 }
 function onErr(e){
@@ -1638,59 +1789,124 @@ function onErr(e){
   else if(e.code===2){setStatus('lost','No GPS signal');showBanner('No GPS signal yet. Step away from tall buildings and give it a moment.','warn','gps')}
   else{if(!me)setStatus('search','Finding you…')}
 }
-$('#btnTrack').addEventListener('click',function(){watchId!=null?stopTracking():startTracking()});
+$('#btnTrack').addEventListener('click',function(){if(watchId!=null)stopTracking();else startByTap()});
 $('#btnLocate').addEventListener('click',function(){
-  if(watchId==null){startTracking();return}
-  setFollow(true);ui();if(me){var z=Math.max(map.getZoom(),17);map.setView(centerAbove([me.lat,me.lng],z),z,{animate:!RM})}
+  map.closePopup();clearTimeout(resumeT);/* centring on the dot leaves the place; this tap does the pan itself */
+  if(watchId==null){startByTap();return}
+  frameLate=false;
+  setFollow(true);
+  ui();/* first, so the sheet has its tracking height before the dot is centred above it */
+  if(me)afterZoomAnim(function(){var z=Math.max(map.getZoom(),17);map.setView(centerAbove([me.lat,me.lng],z),z,{animate:!RM})});
 });
-map.on('dragstart',function(){if(follow){setFollow(false);ui()}});
+map.on('dragstart',function(){userMoved();if(follow){setFollow(false);ui()}});
+map.on('popupopen',userMoved);
 
 setInterval(function(){
-  if(sessionAt){var now=Date.now();S.elapsed+=now-sessionAt;sessionAt=now;updateStats()}
+  var now=Date.now();
+  if(sessionAt){S.elapsed+=now-sessionAt;sessionAt=now;updateStats()}
+  if(watchId==null)return;
+  /* GPS watchdog: no first fix yet -> a running "still looking" line; fixes stopped -> say how old the last one is,
+     grey the dot and distance, and after 30 s (page visible) replace the watch */
+  if(!me){if(now-trackStartAt>15000)$('#nextTime').textContent=lookingText()}
+  else{
+    var age=now-(lastFixAt||trackStartAt);
+    if(age>20000){setStatus('search','Last fix '+Math.round(age/1000)+' s ago');setStale(true)}
+    if(age>30000&&now-lastWatchAt>30000&&document.visibilityState==='visible')rewatch();
+  }
+  if(NAV.pending&&me&&now-trackStartAt>=8000)computeRoute();/* a coarse fix is used after 8 s rather than never */
 },1000);
 setInterval(function(){if(watchId!=null)save()},15000);
 
+/* tracking was on when the page went away (a reload, or the tab discarded while paying in WeChat or Alipay): pick it
+   up again, silently when location is already allowed, otherwise with a one-tap Resume */
+function resumeTracking(){
+  function go(){if(watchId!=null)return;autoCompass();startTracking();toast('Tracking resumed','Stop',stopTracking)}
+  function ask(){
+    if(watchId!=null)return;
+    showBanner('GPS tracking was on when you left this page.','warn','resume');
+    var b=document.createElement('button');b.type='button';b.className='act';b.textContent='Resume';
+    b.addEventListener('click',function(){hideBanner();startByTap()});
+    (banner.querySelector('.banner-t')||banner).appendChild(b);/* under the message, left of WP2's × */
+  }
+  try{navigator.permissions.query({name:'geolocation'}).then(function(p){if(p.state==='granted')go();else ask()},ask)}catch(e){ask()}
+}
+
 /* ---------- compass ---------- */
+var oriS=null,oriC=null,oriQueued=false,cGen=0,calWarned=false;
 function onOri(e){
   var h=null;
-  if(typeof e.webkitCompassHeading==='number')h=e.webkitCompassHeading;
+  if(typeof e.webkitCompassHeading==='number'){
+    h=e.webkitCompassHeading;var ca=e.webkitCompassAccuracy;
+    if(!calWarned&&typeof ca==='number'&&(ca<0||ca>25)){calWarned=true;toast('Compass needs calibrating: wave the phone in a figure-8')}
+  }
   else if(e.absolute&&typeof e.alpha==='number')h=360-e.alpha;
-  if(h==null)return;
+  if(h==null||isNaN(h))return;
   var so=(screen.orientation&&screen.orientation.angle)||window.orientation||0;
-  compassHeading=((h+so)%360+360)%360;
+  h=rad(((h+so)%360+360)%360);
+  /* low-pass on the unit circle (no jump at north); jitter under 1° is ignored */
+  if(oriS==null){oriS=Math.sin(h);oriC=Math.cos(h)}else{oriS=.8*oriS+.2*Math.sin(h);oriC=.8*oriC+.2*Math.cos(h)}
+  var f=(deg(Math.atan2(oriS,oriC))+360)%360;
+  if(compassHeading!=null&&Math.abs(unwrap(compassHeading,f)-compassHeading)<1)return;
+  compassHeading=f;
   if(!oriQueued){oriQueued=true;requestAnimationFrame(function(){oriQueued=false;updateArrow()})}
 }
-var oriQueued=false;
-function compassStart(){
+function setCompassPressed(v){['#compass','#btnCompass'].forEach(function(q){var b=$(q);if(b)b.setAttribute('aria-pressed',String(v))})}
+function compassStart(quiet){/* quiet: started along with tracking, so a phone without a compass just stays north-up */
   window.addEventListener('deviceorientationabsolute',onOri,true);
   window.addEventListener('deviceorientation',onOri,true);
-  compassOn=true;$('#btnCompass').setAttribute('aria-pressed','true');
-  setTimeout(function(){if(compassOn&&compassHeading==null){toast('No compass reading from this phone');compassStop()}},3000);
+  compassOn=true;oriS=oriC=null;setCompassPressed(true);
+  var g=++cGen;
+  setTimeout(function(){if(g===cGen&&compassOn&&compassHeading==null){if(!quiet)toast('No compass reading from this phone');compassStop()}},3000);
 }
 function compassStop(){
+  cGen++;
   window.removeEventListener('deviceorientationabsolute',onOri,true);
   window.removeEventListener('deviceorientation',onOri,true);
-  compassOn=false;compassHeading=null;$('#btnCompass').setAttribute('aria-pressed','false');updateArrow();
+  compassOn=false;compassHeading=null;oriS=oriC=null;setCompassPressed(false);updateArrow();
 }
-$('#btnCompass').addEventListener('click',function(){
+function toggleCompass(){
   if(compassOn){compassStop();return}
   if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
     DeviceOrientationEvent.requestPermission().then(function(r){if(r==='granted')compassStart();else toast('Compass permission was declined')}).catch(function(){toast('Compass isn’t available here')});
   }else if('ondeviceorientationabsolute' in window||'ondeviceorientation' in window){compassStart()}
   else toast('Compass isn’t available here');
-});
+}
+function autoCompass(){
+  try{
+    if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
+      DeviceOrientationEvent.requestPermission().then(function(r){if(r==='granted'&&!compassOn)compassStart(true)}).catch(function(){});
+    }else if('ondeviceorientationabsolute' in window)compassStart(true);
+  }catch(e){}
+}
+$('#btnCompass').addEventListener('click',toggleCompass);
+$('#compass').addEventListener('click',toggleCompass);
 
 /* ---------- keep screen on ---------- */
+function wakeHint(){/* once per visit, and never over a more urgent message (it waits for the next start) */
+  if(wakeHint.done||!banner.hidden)return;
+  try{if(sessionStorage.getItem('cnw-wake-hint'))return;sessionStorage.setItem('cnw-wake-hint','1')}catch(e){}
+  wakeHint.done=1;
+  showBanner('This phone can’t keep the screen on from a web page. Set Auto-Lock to Never while walking; GPS pauses when the screen locks.','warn','wake');
+}
 function setWake(on){
-  if(!('wakeLock' in navigator))return;
-  if(on){navigator.wakeLock.request('screen').then(function(l){wakeLock=l}).catch(function(){})}
+  if(!('wakeLock' in navigator)){if(on)wakeHint();return}
+  /* the refusal races the first fix: when a fix clears a location banner (blocked, no signal) while the request is
+     pending, the hint would seem to be that banner coming back, so it waits for the next start as it does when the
+     refusal lands first, while that banner still shows */
+  if(on){var at=Date.now();navigator.wakeLock.request('screen').then(function(l){wakeLock=l}).catch(function(){if(S.wake&&document.visibilityState==='visible'&&locMsgAt<at)wakeHint()})}
   else if(wakeLock){wakeLock.release().catch(function(){});wakeLock=null}
 }
 document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible'&&watchId!=null&&S.wake)setWake(true);
-  if(document.visibilityState==='hidden')save();
+  if(document.visibilityState==='visible'&&watchId!=null){
+    if(S.wake)setWake(true);
+    /* back from WeChat or Alipay: the old watch may be dead, so start a new one and ask for a fresh fix now */
+    rewatch();
+    try{navigator.geolocation.getCurrentPosition(onPos,function(){},{enableHighAccuracy:true,maximumAge:0,timeout:10000})}catch(e){}
+  }
+  if(document.visibilityState==='hidden')flush();
 });
-window.addEventListener('pagehide',function(){if(sessionAt){S.elapsed+=Date.now()-sessionAt;sessionAt=Date.now()}try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}});
+window.addEventListener('pagehide',flush);
+document.addEventListener('freeze',flush);
 
 /* ---------- settings ---------- */
 var menu=$('#menu');
@@ -1712,6 +1928,7 @@ $('#btnMenu').addEventListener('click',function(){if(menu.hidden)openMenu();else
 function syncSettings(){
   document.querySelectorAll('[data-lab]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-lab')===S.labels))});
   $('#optNight').checked=S.night;$('#optWake').checked=S.wake;$('#optFix').checked=S.fix;
+  $('#optVoice').checked=S.voice;
   document.body.classList.toggle('night-map',S.night);
   /* Night mode also sets the dark theme, whatever the phone's own light/dark setting */
   document.documentElement.dataset.theme=S.night?'dark':'';
@@ -1722,6 +1939,15 @@ if(window.matchMedia){var darkMQ=matchMedia('(prefers-color-scheme: dark)');if(d
 document.querySelectorAll('[data-lab]').forEach(function(b){b.addEventListener('click',function(){S.labels=b.getAttribute('data-lab');tiles.setUrl(tileUrl());syncSettings();save()})});
 $('#optNight').addEventListener('change',function(){S.night=this.checked;syncSettings();save()});
 $('#optWake').addEventListener('change',function(){S.wake=this.checked;setWake(S.wake&&watchId!=null);save()});
+$('#optVoice').addEventListener('change',function(){
+  S.voice=this.checked;save();
+  /* speech must be unlocked inside a tap (iOS): speak an empty line now */
+  if(S.voice&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{speechSynthesis.speak(new SpeechSynthesisUtterance(''))}catch(e){}}
+});
+function speak(t){
+  if(!S.voice||!t||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;
+  try{var u=new SpeechSynthesisUtterance(t);u.lang='en-US';speechSynthesis.speak(u)}catch(e){}
+}
 $('#optFix').addEventListener('change',function(){
   S.fix=this.checked;
   if(meRaw){var m=toMap(meRaw.lat,meRaw.lng);me={lat:m[0],lng:m[1]};if(meMarker){meMarker.setLatLng(m);accCircle.setLatLng(m)}}
@@ -1739,7 +1965,7 @@ $('#btnGpx').addEventListener('click',function(){
 });
 $('#btnReset').addEventListener('click',function(){
   if(!confirm('Clear your track, tracking time and done stops?'))return;
-  S=Object.assign({},DEF,carry(),{visited:{},trail:[]});
+  S=Object.assign({},DEF,carry(),{visited:{},trail:[],tracking:watchId!=null});
   if(watchId!=null){S.trail.push([]);sessionAt=Date.now()}
   liveLine=null;drawTrail();refreshPins();ui();save();closeMenu();toast('Walk reset');
 });
@@ -1751,9 +1977,13 @@ function esc(v){return String(v).replace(/[&<>"']/g,function(c){return{'&':'&amp
 function ll(a){return{lat:a[0],lng:a[1]}}
 function g2w(lat,lng){if(outOfChina(lat,lng))return[lat,lng];var a=lat,b=lng;for(var i=0;i<4;i++){var g=w2g(a,b);a-=g[0]-lat;b-=g[1]-lng}return[a,b]}
 function segDist(p,a,b){var kx=Math.cos(rad(p.lat))*111320,ky=110540,ax=(a.lng-p.lng)*kx,ay=(a.lat-p.lat)*ky,bx=(b.lng-p.lng)*kx,by=(b.lat-p.lat)*ky,dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy,t=L2?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/L2)):0,x=ax+t*dx,y=ay+t*dy;return[Math.sqrt(x*x+y*y),t]}
-function fetchJSON(url,ms){
+/* ms: own time limit (covers the body too); signal: an outside abort (a newer request, or the other router won) */
+function fetchJSON(url,ms,signal){
   var ctl=typeof AbortController!=='undefined'?new AbortController():null,t=setTimeout(function(){if(ctl)ctl.abort()},ms||12000);
-  return fetch(url,ctl?{signal:ctl.signal}:{}).then(function(r){clearTimeout(t);if(!r.ok)throw new Error('HTTP '+r.status);return r.json()},function(e){clearTimeout(t);throw e});
+  function stop(){clearTimeout(t);if(ctl)ctl.abort()}
+  if(signal){if(signal.aborted)stop();else signal.addEventListener('abort',stop)}
+  function done(){clearTimeout(t);if(signal)signal.removeEventListener('abort',stop)}
+  return fetch(url,ctl?{signal:ctl.signal}:{}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){done();return j},function(e){done();throw e});
 }
 function decode6(str){var i=0,lat=0,lng=0,out=[];while(i<str.length){var b,sh=0,res=0;do{b=str.charCodeAt(i++)-63;res|=(b&31)<<sh;sh+=5}while(b>=32);lat+=(res&1)?~(res>>1):(res>>1);sh=0;res=0;do{b=str.charCodeAt(i++)-63;res|=(b&31)<<sh;sh+=5}while(b>=32);lng+=(res&1)?~(res>>1):(res>>1);out.push([lat/1e6,lng/1e6])}return out}
 
@@ -1764,9 +1994,9 @@ function vIcon(t){
   if(t===12||t===13)return ICON.uturn;if(t===14)return ICON['sharp left'];if(t===15)return ICON.left;
   if([16,19,21,24,38].indexOf(t)>=0)return ICON['slight left'];if(t===26||t===27)return ICON.round;return ICON.straight;
 }
-function routeValhalla(a,b){
-  var q={locations:[{lat:a[0],lon:a[1]},{lat:b[0],lon:b[1]}],costing:'pedestrian',directions_options:{units:'kilometers',language:'en-US'}};
-  return fetchJSON('https://valhalla1.openstreetmap.de/route?json='+encodeURIComponent(JSON.stringify(q))).then(function(j){
+function routeValhalla(a,b,signal){
+  var q={locations:[{lat:a[0],lon:a[1]},{lat:b[0],lon:b[1]}],costing:'pedestrian',costing_options:{pedestrian:{use_lit:1}},directions_options:{units:'kilometers',language:'en-US'}};
+  return fetchJSON('https://valhalla1.openstreetmap.de/route?json='+encodeURIComponent(JSON.stringify(q)),7000,signal).then(function(j){
     var leg=j&&j.trip&&j.trip.legs&&j.trip.legs[0];if(!leg||!leg.shape)throw new Error('no route');
     return{coords:decode6(leg.shape),dist:j.trip.summary.length*1000,time:j.trip.summary.time,src:'Valhalla',
       steps:(leg.maneuvers||[]).map(function(m){return{text:m.instruction,dist:(m.length||0)*1000,idx:m.begin_shape_index||0,icon:vIcon(m.type)}})};
@@ -1784,8 +2014,8 @@ function osrmText(s){
   if(t==='end of road')return 'At the end of the road, turn '+mod.replace(/^(slight|sharp) /,'')+on;
   return 'Turn '+mod+on;
 }
-function routeOSRM(a,b){
-  return fetchJSON('https://routing.openstreetmap.de/routed-foot/route/v1/foot/'+a[1]+','+a[0]+';'+b[1]+','+b[0]+'?overview=full&geometries=geojson&steps=true').then(function(j){
+function routeOSRM(a,b,signal){
+  return fetchJSON('https://routing.openstreetmap.de/routed-foot/route/v1/foot/'+a[1]+','+a[0]+';'+b[1]+','+b[0]+'?overview=full&geometries=geojson&steps=true',7000,signal).then(function(j){
     var r=j&&j.routes&&j.routes[0];if(!r)throw new Error('no route');
     var coords=r.geometry.coordinates.map(function(c){return[c[1],c[0]]}),k=0,steps=[];
     r.legs[0].steps.forEach(function(s){
@@ -1798,8 +2028,23 @@ function routeOSRM(a,b){
     return{coords:coords,dist:r.distance,time:r.duration,steps:steps,src:'OSRM'};
   });
 }
+/* both routers run in Germany and evening links from China are slow: Valhalla gets 7 s, OSRM (7 s) starts as soon as
+   Valhalla fails or after 2.5 s without an answer; the first success wins and cancels the other */
+function routeAny(a,b,signal){
+  var AC=typeof AbortController!=='undefined',c1=AC?new AbortController():null,c2=AC?new AbortController():null,done=false,fails=0,bOn=false,t=0;
+  return new Promise(function(res,rej){
+    function stop(){clearTimeout(t);if(c1)c1.abort();if(c2)c2.abort()}
+    function ok(r){if(done)return;done=true;stop();res(r)}
+    function bad(){if(done)return;if(++fails>=2){done=true;clearTimeout(t);rej(new Error('no route'))}else startB()}
+    function startB(){if(bOn||done)return;bOn=true;clearTimeout(t);routeOSRM(a,b,c2&&c2.signal).then(ok,bad)}
+    if(signal){if(signal.aborted){done=true;rej(new Error('aborted'));return}signal.addEventListener('abort',function(){if(!done){done=true;stop();rej(new Error('aborted'))}})}
+    routeValhalla(a,b,c1&&c1.signal).then(ok,bad);
+    t=setTimeout(startB,2500);
+  });
+}
 
-var NAV={from:null,to:null,route:null,pending:false,lastReroute:0,offCount:0,curStep:-2,buzzed:-1,layer:L.layerGroup().addTo(map)};
+var NAV={from:null,to:null,route:null,pending:false,lastReroute:0,offCount:0,curStep:-2,buzzed:-1,layer:L.layerGroup().addTo(map),
+  inflight:false,ctl:null,retryT:0,fails:0,followT:0,arrived:false,wasOff:false,spoken:-1,arrB:null};
 var navReq=0;
 function placeEnd(s){return s?{type:'place',lat:s.lat,lng:s.lng,label:isBase(s)?s.short:s.name,zh:s.zh,id:s.id}:null}
 function endLabel(e){return !e?'':e.type==='me'?'My location':e.label}
@@ -1808,7 +2053,10 @@ function endWgs(e){if(e.type==='me'){if(!meRaw)return null;return S.fix?[meRaw.l
 function dirEl(){return $('#dir')}
 var dirSrc=$('#dirSrc');/* kept by reference: renderDir moves it into #steps so it scrolls with them */
 function dirH(){return dirEl().offsetHeight||300}
-function setDirMsg(m){var el=$('#dirMsg');el.textContent=m||'';el.hidden=!m}
+function setDirMsg(m,retry){
+  var el=$('#dirMsg');el.textContent=m||'';el.hidden=!m;
+  if(m&&retry){var b=document.createElement('button');b.type='button';b.className='chip';b.id='dirRetry';b.textContent='Retry';b.addEventListener('click',function(){computeRoute()});el.appendChild(b)}
+}
 function amapRoute(f,t){
   var tl=endLL(t);if(!tl)return null;
   var u='https://uri.amap.com/navigation?to='+tl[1]+','+tl[0]+','+encodeURIComponent(t.type==='me'?'我的位置':(t.zh||t.label))+'&mode=walk&coordinate=gaode&callnative=1&src=changsha-night-walk';
@@ -1830,40 +2078,112 @@ function openRoute(to,from){
   if(!NAV.to){renderDir();openPicker('to');return}
   if(to||from||!NAV.route)computeRoute();else renderDir();
 }
-function endRoute(){navReq++;NAV.route=null;NAV.to=null;NAV.pending=false;NAV.layer.clearLayers();setDirMsg('');showDir(false)}
+function endRoute(){
+  navReq++;if(NAV.ctl){NAV.ctl.abort();NAV.ctl=null}NAV.inflight=false;
+  clearTimeout(NAV.retryT);NAV.retryT=0;clearTimeout(NAV.followT);
+  NAV.route=null;NAV.to=null;NAV.pending=false;NAV.fails=0;NAV.layer.clearLayers();removeCrow();setDirMsg('');
+  try{sessionStorage.removeItem('cnw-nav')}catch(e){}
+  try{if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}
+  showDir(false);
+}
+/* the open route survives a reload or a discarded tab (sessionStorage); both ends carry their own coordinates */
+function saveNav(){try{if(NAV.from&&NAV.to)sessionStorage.setItem('cnw-nav',JSON.stringify({from:NAV.from,to:NAV.to}));else sessionStorage.removeItem('cnw-nav')}catch(e){}}
+function restoreNav(){
+  var n=null;try{n=JSON.parse(sessionStorage.getItem('cnw-nav')||'null')}catch(e){}
+  function ok(e){return isObj(e)&&(e.type==='me'||typeof e.lat==='number'&&typeof e.lng==='number'&&isFinite(e.lat)&&isFinite(e.lng))}
+  if(!isObj(n)||!ok(n.to))return;
+  /* an id this walk doesn't have, or has for another place ('hotel' is the Wyndham on one walk, the street on the
+     other), is dropped so the end gets its own marker */
+  [n.from,n.to].forEach(function(e){if(isObj(e)&&e.id&&(!BY[e.id]||dist(BY[e.id],e)>5))delete e.id});
+  NAV.from=ok(n.from)?n.from:null;NAV.to=n.to;
+  if(NAV.from&&NAV.from.type==='me'&&!geoOK())NAV.from=placeEnd(HOTEL);
+  if(!NAV.from)NAV.from=geoOK()?{type:'me'}:placeEnd(HOTEL);
+  showDir(true);computeRoute();
+}
+/* opts.reroute: started by updateNav because the walker left the route. A reroute keeps the old route until a new one
+   arrives, never refits the map and never touches follow */
 function computeRoute(opts){
-  NAV.pending=false;
-  if(!NAV.from||!NAV.to){NAV.route=null;drawRoute();renderDir();return}
+  opts=opts||{};
+  NAV.pending=false;clearTimeout(NAV.retryT);NAV.retryT=0;
+  navReq++;if(NAV.ctl){NAV.ctl.abort();NAV.ctl=null}NAV.inflight=false;
+  if(!opts.reroute){NAV.route=null;NAV.arrived=false;NAV.fails=0}
+  saveNav();
+  if(!NAV.from||!NAV.to){drawRoute();renderDir();return}
   var a=endWgs(NAV.from),b=endWgs(NAV.to);
-  if(!a||!b){NAV.pending=true;NAV.route=null;drawRoute();renderDir();setDirMsg(geoOK()?'Waiting for your location…':'Your location isn’t available on this page. Choose a start point instead.');return}
-  if(dist(ll(a),ll(b))<15){NAV.route=null;drawRoute();renderDir();setDirMsg('Start and destination are the same spot.');return}
-  /* offline fast path (WP4): no connection, so don't wait for routers that can't answer. A reroute keeps the route it has */
-  if(navigator.onLine===false){
-    navReq++;
-    if(opts&&opts.reroute&&NAV.route){setDirMsg('You’re offline, so the route can’t be updated. Still showing the previous one.');return}
-    NAV.route=null;drawRoute();renderDir();
-    var olink=amapRoute(NAV.from,NAV.to);
-    if(olink){$('#dirSum').hidden=false;$('#sumDist').textContent='';$('#sumTime').textContent='';$('#sumAmap').hidden=false;$('#sumAmap').href=olink}
-    if(typeof straightLine==='function')straightLine();/* WP3's straight-line mode, once merged */
-    var of=endLL(NAV.from),ot=endLL(NAV.to),od=of&&ot?dist(ll(of),ll(ot)):0;
-    setDirMsg('You’re offline, so walking directions can’t load'+(od?': '+endLabel(NAV.to)+' is '+fmtD(od)+' to the '+cardinal(bearing(ll(of),ll(ot)))+' in a straight line (about '+walkMin(od)+' min).':'.')+' They come back when you’re online again.');
+  /* from "me": wait for a fix of 50 m or better, for up to 8 s after tracking starts, so a coarse first fix isn't the start */
+  var early=!!(NAV.from.type==='me'&&a&&acc>50&&watchId!=null&&Date.now()-trackStartAt<8000);
+  if(!a||!b||early){
+    NAV.pending=true;NAV.route=null;drawRoute();renderDir();
+    setDirMsg(!geoOK()?'Your location isn’t available on this page. Choose a start point instead.':early?'Waiting for a more accurate GPS fix…':watchId==null?'Waiting for your location. Tap the locate button (top right) to start GPS.':'Waiting for your location…');
     return;
   }
-  var id=++navReq;
-  if(!NAV.route){renderDir();setDirMsg('Finding a walking route…')}
-  routeValhalla(a,b).catch(function(){return routeOSRM(a,b)}).then(function(r){
+  if(dist(ll(a),ll(b))<15){NAV.route=null;drawRoute();renderDir();setDirMsg('Start and destination are the same spot.');return}
+  /* offline fast path (WP4): no connection, so don't wait for routers that can't answer. It runs before anything is put
+     in flight; a reroute keeps the route it has, otherwise WP3's straight-line mode takes over */
+  if(navigator.onLine===false){routeFailed(opts,true);return}
+  var id=navReq,ctl=typeof AbortController!=='undefined'?new AbortController():null,from=NAV.from;
+  NAV.ctl=ctl;NAV.inflight=true;
+  if(opts.reroute)NAV.lastReroute=Date.now();
+  if(!NAV.route){drawRoute();renderDir();setDirMsg('Finding a walking route…')}else updateNav();
+  routeAny(a,b,ctl&&ctl.signal).then(function(r){
     if(id!==navReq)return;
-    r.disp=r.coords.map(function(c){return w2g(c[0],c[1])});
-    r.cum=[0];for(var i=1;i<r.disp.length;i++)r.cum.push(r.cum[i-1]+dist(ll(r.disp[i-1]),ll(r.disp[i])));
-    NAV.route=r;NAV.offCount=0;NAV.buzzed=-1;NAV.saidArr=false;
-    renderDir();drawRoute(true);
+    NAV.inflight=false;NAV.ctl=null;
+    prepRoute(r,from);
+    NAV.route=r;NAV.offCount=0;NAV.buzzed=-1;NAV.spoken=-1;NAV.fails=0;NAV.wasOff=false;NAV.arrived=false;
+    renderDir();drawRoute(!opts.reroute);
   }).catch(function(){
     if(id!==navReq)return;
-    NAV.route=null;drawRoute();renderDir();
-    setDirMsg('Couldn’t get a walking route right now. Try again in a moment, or use Open in Amap.');
-    var link=amapRoute(NAV.from,NAV.to),sum=$('#dirSum');
-    if(link){sum.hidden=false;$('#sumDist').textContent='';$('#sumTime').textContent='';$('#sumAmap').href=link}
+    NAV.inflight=false;NAV.ctl=null;
+    routeFailed(opts);
   });
+}
+/* also the entry point for an offline fast path: straight-line mode plus Amap */
+function routeFailed(opts,offline){
+  if(opts&&opts.reroute&&NAV.route){/* the old route is still the best guide: keep it and try again later */
+    NAV.fails++;
+    setDirMsg(offline?'You’re offline, so the route can’t be updated. Still showing the previous one.':'Couldn’t update the route. Still showing the previous one.');
+    if(NAV.fails<=3)NAV.retryT=setTimeout(function(){NAV.retryT=0;if(NAV.route&&NAV.offCount>0&&!NAV.inflight)computeRoute({reroute:true})},[20,40,60][NAV.fails-1]*1000);
+    updateNav();return;
+  }
+  NAV.route=null;drawRoute();renderDir();
+  if(offline)setDirMsg('You’re offline, so walking directions to '+endLabel(NAV.to)+' can’t load. Follow the straight line, or open Amap; directions come back when you’re online.',true);
+  else setDirMsg('Couldn’t get a walking route right now. Follow the straight line, or open Amap.',true);
+  $('#sumAmap').classList.add('primary');/* Amap is now the best way to get a street route */
+  var f=endLL(NAV.from),t=endLL(NAV.to);
+  if(f&&t)fitView(L.latLngBounds([f,t]),17);
+}
+function prepRoute(r,from){
+  r.disp=r.coords.map(function(c){return w2g(c[0],c[1])});
+  /* approach leg: routers start the line on the nearest mapped footway, often 30-60 m away; join it to the walker so
+     the route isn't "off" from the very first step */
+  if(from.type==='me'&&me&&r.disp.length){var gap=dist(me,ll(r.disp[0]));if(gap>15){r.disp.unshift([me.lat,me.lng]);r.steps.forEach(function(s){s.idx++});r.dist+=gap;r.time+=gap/1.3}}
+  r.cum=[0];for(var i=1;i<r.disp.length;i++)r.cum.push(r.cum[i-1]+dist(ll(r.disp[i-1]),ll(r.disp[i])));
+  r.steps=tidySteps(r);
+  var fl=endLL(from),tl=endLL(NAV.to);r.crow=fl&&tl?dist(ll(fl),ll(tl)):0;
+}
+/* fewer micro-steps: a U-turn in the first 20 m (a snapping artefact) is dropped, and a step shorter than 15 m (not the
+   first or last) is folded into the next one: "Turn right onto X, then turn left onto Y" */
+function tidySteps(r){
+  var st=r.steps.map(function(s){return{text:s.text,dist:s.dist,idx:s.idx,icon:s.icon}}),i;
+  if(st.length<3)return st;
+  function at(s){return r.cum[Math.min(s.idx,r.cum.length-1)]}
+  var start=at(st[0]);
+  for(i=1;i<st.length-1;i++){
+    if(st[i].icon===ICON.uturn&&at(st[i])-start<20){
+      var a=Math.min(st[i].idx,r.disp.length-1),b=Math.min(st[i+1].idx,r.disp.length-1);
+      if(b>a)st[i-1].text=st[i-1].text.replace(/\b(northeast|northwest|southeast|southwest|north|south|east|west)\b/,cardinal(bearing(ll(r.disp[a]),ll(r.disp[b]))));
+      st[i-1].dist+=st[i].dist;st.splice(i,1);i--;
+    }
+  }
+  var out=[];
+  for(i=0;i<st.length;i++){
+    var s=st[i],n=st[i+1];
+    if(i>0&&n&&i<st.length-1&&s.dist<15){
+      out.push({text:s.text.replace(/[.\s]+$/,'')+', then '+(/^[A-Z][a-z]/.test(n.text)?n.text.charAt(0).toLowerCase()+n.text.slice(1):n.text),dist:s.dist+n.dist,idx:s.idx,icon:s.icon});
+      i++;
+    }else out.push(s);
+  }
+  return out;
 }
 function endMarker(p,cls){return L.marker(p,{icon:L.divIcon({className:'pin-wrap',html:'<div class="endpt '+cls+'"></div>',iconSize:[18,18],iconAnchor:[9,9]}),interactive:false,keyboard:false,zIndexOffset:600})}
 function drawRoute(fit){
@@ -1873,23 +2193,42 @@ function drawRoute(fit){
   var f=endLL(NAV.from),t=endLL(NAV.to);
   if(f&&NAV.from.type!=='me'&&!NAV.from.id)endMarker(f,'a').addTo(NAV.layer);
   if(t&&NAV.to.type!=='me'&&!NAV.to.id)endMarker(t,'b').addTo(NAV.layer);
-  if(fit&&r){setFollow(false);map.fitBounds(L.latLngBounds(r.disp),{paddingTopLeft:[24,Math.max(70+SAT,toastTop()+20)],paddingBottomRight:[70,dirH()+16],maxZoom:18,animate:!RM})}
+  if(fit&&r)fitView(L.latLngBounds(r.disp),18);
+}
+/* fit above the route panel; when routing from "me", follow comes back on after 4 s unless the map was moved by hand */
+function fitView(bounds,maxZ){
+  setFollow(false);
+  afterZoomAnim(function(){map.fitBounds(bounds,{paddingTopLeft:[24,Math.max(70+SAT,toastTop()+20,topOcc()+12)],paddingBottomRight:[70,dirH()+16],maxZoom:maxZ,animate:!RM})});
+  clearTimeout(NAV.followT);
+  if(NAV.from&&NAV.from.type==='me'){var at=Date.now();NAV.followT=setTimeout(function(){if(watchId!=null&&!follow&&lastDragAt<at){setFollow(true);ui();if(me)afterZoomAnim(followPan)}},4000)}
 }
 function renderDir(){
   var ft=$('#fromTxt'),tt=$('#toTxt');
   dirEl().classList.toggle('from-me',!!(NAV.from&&NAV.from.type==='me'&&NAV.route));
   ft.textContent=NAV.from?endLabel(NAV.from):'Choose start';ft.classList.toggle('ph',!NAV.from);
   tt.textContent=NAV.to?endLabel(NAV.to):'Choose destination';tt.classList.toggle('ph',!NAV.to);
-  var r=NAV.route;
-  if(!r){$('#dirSum').hidden=true;$('#steps').innerHTML='';$('#navNow').hidden=true;dirSrc.hidden=true;dirEl().appendChild(dirSrc);return}
+  var r=NAV.route,a=$('#sumAmap'),link=NAV.to?amapRoute(NAV.from,NAV.to):null;
+  a.hidden=!link;if(link)a.href=link;
+  /* Amap is the better bet when OSM data makes a short hop into a long detour */
+  var detour=!!(r&&r.crow&&r.crow<1000&&r.dist>1.4*r.crow);
+  a.classList.toggle('primary',detour);
+  if(!r){/* loading, failed or offline: Amap stays in reach; updateNav draws the straight line */
+    $('#dirSum').hidden=!link;$('#sumDist').textContent='';$('#sumTime').textContent='';
+    $('#steps').innerHTML='';dirSrc.hidden=true;dirEl().appendChild(dirSrc);NAV.curStep=-2;updateNav();return}
   setDirMsg('');
   $('#dirSum').hidden=false;
-  $('#sumDist').textContent=fmtD(r.dist);
-  $('#sumTime').textContent='about '+Math.max(1,Math.round(r.time/60))+' min';
-  var link=amapRoute(NAV.from,NAV.to),a=$('#sumAmap');a.hidden=!link;if(link)a.href=link;
   $('#steps').innerHTML=r.steps.map(function(s,i){return '<button class="step" data-step="'+i+'"><span class="ic" aria-hidden="true">'+s.icon+'</span><span>'+esc(s.text)+'</span><span class="sd">'+(s.dist>=1?fmtD(s.dist):'')+'</span></button>'}).join('');
-  var src=dirSrc;$('#steps').appendChild(src);src.hidden=false;src.textContent='Route from OpenStreetMap data via '+r.src+'. Some footpaths in Changsha may be missing; Amap has fuller coverage.';
-  NAV.curStep=-2;updateNav();
+  var src=dirSrc;$('#steps').appendChild(src);src.hidden=false;
+  src.textContent='Route from OpenStreetMap data via '+r.src+'. Some footpaths in Changsha may be missing; Amap has fuller coverage.'+(detour?' This route may detour around missing map data; Amap’s route is usually better here.':'');
+  NAV.curStep=-2;updateSummary(r,r.cum[r.cum.length-1]);updateNav();
+}
+/* distance and time still to go, and when you'll get there (China time); a place-to-place route shows the whole trip */
+function updateSummary(r,rem){
+  var total=r.cum[r.cum.length-1]||1,live=!!(NAV.from&&NAV.from.type==='me'),f=Math.max(0,Math.min(1,rem/total)),sec=r.time*(live?f:1);
+  $('#sumDist').textContent=fmtD(r.dist*(live?f:1));
+  var c=live?cstClock(Date.now()+sec*1000):'';
+  /* two short lines, so it fits beside the distance and the Amap chip at 360 px; reads "about 6 min · arrive 21:42" */
+  $('#sumTime').innerHTML='<span>about '+Math.max(1,Math.round(sec/60))+' min</span>'+(c?'<span class="sep"> · </span><span>arrive '+c+'</span>':'');
 }
 function markStep(i){
   if(NAV.curStep===i)return;NAV.curStep=i;
@@ -1897,33 +2236,81 @@ function markStep(i){
   for(var j=0;j<els.length;j++)els[j].classList.toggle('cur',j===i);
   if(i>=0&&els[i]&&!dirEl().classList.contains('compact')&&!dirEl().hidden)els[i].scrollIntoView({block:'nearest'});
 }
+/* #navNow: optional arrow (a bearing, turned by the compass heading) + content; the arrow element is kept between
+   updates so its rotation animates instead of jumping */
+var ARR='<svg class="arr" id="navArr" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2 19.2 20.6 12 16.9 4.8 20.6Z" fill="currentColor"/></svg>';
+function setNavNow(cls,html,arrB){
+  var box=$('#navNow'),want=arrB!=null;
+  box.hidden=false;box.className='nav-now'+(cls?' '+cls:'');
+  if(box._arr!==want||!box.querySelector('.nn')){box._arr=want;box.innerHTML=(want?ARR:'')+'<span class="nn"></span>'}
+  var nn=box.querySelector('.nn');if(nn._h!==html){nn._h=html;nn.innerHTML=html}
+  NAV.arrB=want?arrB:null;updateNavArrow();
+}
+function updateNavArrow(){
+  var a=document.getElementById('navArr');if(!a||NAV.arrB==null)return;
+  var h=heading();navArrRot=unwrap(navArrRot,h==null?NAV.arrB:NAV.arrB-h);a.style.transform='rotate('+navArrRot.toFixed(1)+'deg)';
+}
+/* straight-line mode: no route (loading, failed, offline) -> a dashed line to the destination and, from "me", an arrow
+   with distance and direction that needs no network at all */
+var crowLine=null;
+function removeCrow(){if(crowLine){map.removeLayer(crowLine);crowLine=null}}
+function updateCrow(){
+  var box=$('#navNow'),t=NAV.to&&NAV.to.type!=='me'?endLL(NAV.to):null,f=NAV.from?endLL(NAV.from):null;
+  if(NAV.route||!t||!f){removeCrow();box.hidden=true;markStep(-1);return}
+  if(crowLine)crowLine.setLatLngs([f,t]);else crowLine=L.polyline([f,t],{className:'crow',interactive:false}).addTo(map);
+  if(NAV.from.type!=='me'){box.hidden=true;return}
+  var tl=ll(t),d=dist(me,tl),b=bearing(me,tl);
+  if(d<20){setNavNow('','<span class="in">✓</span><span>You’re at '+esc(endLabel(NAV.to))+'</span>',null);return}
+  setNavNow('crow','<span class="in">'+fmtD(d)+'</span><span>'+cardinal(b)+' · about '+walkMin(d)+' min, straight line</span>',b);
+}
+/* at the end of a route to a stop: tick it (with Undo) and offer the next stop in one tap */
+function navArrived(r){
+  var to=NAV.to,s=to&&to.id?BY[to.id]:null,ticked=false;
+  if(!NAV.arrived){
+    NAV.arrived=true;
+    if(s&&!s.eat&&!isBase(s)&&!S.visited[s.id]&&!undone[s.id]&&acc<=35){arrive(s);ticked=true}
+    ui();
+    var w='You’ve arrived at '+endLabel(to);
+    if(!ticked&&typeof say==='function')say(w);/* a tick's toast is announced already */
+    speak(w);
+  }
+  var n=BY[curNext],h='<span class="in">✓</span><span>You’ve arrived at '+esc(endLabel(to))+'</span>';
+  if(n&&n!==s&&!(isBase(n)&&s&&isBase(s)))h+='<button class="chip" data-act="route" data-id="'+n.id+'">Next: '+esc(n===HOTEL?HOTEL.back:n.name)+' · Route</button>';
+  setNavNow('',h,null);markStep(r.steps.length-1);
+}
 function updateNav(){
-  var r=NAV.route,box=$('#navNow');
-  if(!r||!NAV.from||NAV.from.type!=='me'||!me||r.disp.length<2){box.hidden=true;markStep(-1);return}
+  var r=NAV.route;
+  if(!r){updateCrow();return}
+  removeCrow();
+  if(!NAV.from||NAV.from.type!=='me'||!me||r.disp.length<2){$('#navNow').hidden=true;markStep(-1);return}
   var best=0,bd=1e9,bt=0;
   for(var i=0;i<r.disp.length-1;i++){var sd=segDist(me,ll(r.disp[i]),ll(r.disp[i+1]));if(sd[0]<bd){bd=sd[0];best=i;bt=sd[1]}}
   var along=r.cum[best]+bt*(r.cum[best+1]-r.cum[best]),total=r.cum[r.cum.length-1];
-  box.hidden=false;
-  if(total-along<20&&bd<40){box.className='nav-now';box.innerHTML='<span class="in">✓</span><span>You’ve arrived at '+esc(endLabel(NAV.to))+'</span>';markStep(r.steps.length-1);
-    if(!NAV.saidArr){NAV.saidArr=true;say('You’ve arrived at '+endLabel(NAV.to))}return}
+  updateSummary(r,total-along);
+  if(total-along<20&&bd<40){navArrived(r);return}
   if(bd>Math.max(40,(acc||0)*1.2)){
-    NAV.offCount++;box.className='nav-now off';box.innerHTML='<span class="in">'+fmtD(bd)+'</span><span>off the route. Finding a new one…</span>';
-    if(NAV.offCount===1)say(fmtD(bd)+' off the route. Finding a new one.');
-    if(NAV.offCount>=2&&Date.now()-NAV.lastReroute>20000){NAV.lastReroute=Date.now();computeRoute({reroute:true})}
+    if(acc<=60)NAV.offCount++;/* a fix that poor can't tell whether you left the route */
+    var A=r.disp[best],B=r.disp[best+1],nb=bearing(me,{lat:A[0]+(B[0]-A[0])*bt,lng:A[1]+(B[1]-A[1])*bt});
+    if(!NAV.wasOff){NAV.wasOff=true;var w=fmtD(bd)+' off the route.';if(typeof say==='function')say(w);speak(w)}
+    var bdT=fmtD(bd).replace(' ','\u00a0');/* "120 m" never splits across two lines */
+    setNavNow('off',NAV.inflight?'<span>Off route by '+bdT+'. Finding a new route…</span>':'<span>Head back to the route: '+bdT+' to the '+cardinal(nb)+'</span>',nb);
+    if(!NAV.inflight&&!NAV.retryT&&NAV.offCount>=2&&Date.now()-NAV.lastReroute>(NAV.fails>=3?60000:20000))computeRoute({reroute:true});
     return;
   }
-  NAV.offCount=0;
+  NAV.offCount=0;NAV.wasOff=false;
+  if(NAV.fails&&!NAV.inflight){NAV.fails=0;clearTimeout(NAV.retryT);NAV.retryT=0;setDirMsg('')}/* back on the old route */
   var ni=r.steps.length-1;
   for(var k=1;k<r.steps.length;k++){if(r.cum[Math.min(r.steps[k].idx,r.cum.length-1)]>along+3){ni=k;break}}
   var s=r.steps[ni],dn=Math.max(0,r.cum[Math.min(s.idx,r.cum.length-1)]-along);
-  box.className='nav-now';box.innerHTML='<span class="in">'+fmtD(dn)+'</span><span>'+esc(s.text)+'</span>';
-  if(NAV.curStep!==ni)say('In '+fmtD(dn)+': '+s.text);/* only when the step changes, never on distance ticks */
-  if(dn<25&&NAV.buzzed!==ni){NAV.buzzed=ni;if(navigator.vibrate)navigator.vibrate(150)}
+  setNavNow('','<span class="in">'+fmtD(dn)+'</span><span>'+esc(s.text)+'</span>',null);
+  if(NAV.curStep!==ni&&typeof say==='function')say('In '+fmtD(dn)+': '+s.text);/* on a step change, never on distance ticks */
+  if(dn<25&&NAV.buzzed!==ni){NAV.buzzed=ni;if(navigator.vibrate)navigator.vibrate(150)}/* once per step */
+  if(dn<=30&&NAV.spoken!==ni){NAV.spoken=ni;speak(s.text)}
   markStep(ni);
 }
 function zoomStep(i){
   var r=NAV.route;if(!r||!r.steps[i])return;
-  var p=r.disp[Math.min(r.steps[i].idx,r.disp.length-1)];setFollow(false);
+  var p=r.disp[Math.min(r.steps[i].idx,r.disp.length-1)];setFollow(false);userMoved();
   map.setView(p,18,{animate:false});map.panBy([0,Math.round(dirH()/2)],{animate:false});
 }
 
@@ -2156,9 +2543,12 @@ try{if(new URLSearchParams(location.search).get('card')==='home'){history.replac
 /* ---------- boot ---------- */
 syncSettings();syncDay();drawTrail();ui();fitAll();pinRings();
 var switched=null;try{switched=sessionStorage.getItem('changsha-walk-switched');sessionStorage.removeItem('changsha-walk-switched')}catch(e){}
+var resume=!switched&&S.tracking&&geoOK();
 if(switched){toast('Showing the '+DAYS[DAY].label+' walk');if(switched==='track'&&geoOK())startTracking()}
-else if(S.trail.some(function(g){return g.length}))toast('Your earlier walk is restored');
+else if(!resume&&S.trail.some(function(g){return g.length}))toast('Your earlier walk is restored');
 if(!geoOK()){setStatus('blocked','No location here');showBanner(INSECURE_MSG,'bad','secure')}
+restoreNav();
+if(resume)resumeTracking();
 })();
 </script>
 </body>
