@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#101a30">
 <title>Changsha Night Walk — live GPS</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Night Walk"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://webrd01.is.autonavi.com" crossorigin><link rel="preconnect" href="https://webrd02.is.autonavi.com" crossorigin><link rel="dns-prefetch" href="https://webrd03.is.autonavi.com"><link rel="dns-prefetch" href="https://webrd04.is.autonavi.com">
 <style>/* required styles */
 
 .leaflet-pane,
@@ -880,6 +882,21 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
 .pickbar span{flex:1}
 @media (min-width:700px){.dir{bottom:12px;border-radius:24px;left:12px;right:auto;width:420px;margin:0}}
 
+/* offline and install (WP4) */
+.menu{max-height:calc(100vh - env(safe-area-inset-top,0px) - 20px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 20px);overflow-y:auto;overscroll-behavior:contain}
+.menu h2.menu-sub{margin-top:16px}
+.menu .opt-row .btn{flex:none}
+.menu .btn:disabled{opacity:.65;cursor:default}
+.pack{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.pack small{display:block;color:var(--muted);font-size:12px;line-height:1.35;margin-top:2px}
+.pack-act{display:flex;align-items:center;gap:10px;margin-top:8px}
+.pack-st{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.35}
+.pack-act .btn{margin-left:auto;min-width:92px}
+.menu-note{font-size:12.5px;color:var(--muted);line-height:1.4;margin:10px 0 0}
+.ver{font-size:11.5px;color:var(--muted);margin:12px 0 0}
+#netTag{margin-left:-4px;white-space:nowrap}
+.opts a.opt{text-decoration:none;color:inherit}
+
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 @media (min-width:700px){.sheet{bottom:12px;border-radius:24px;left:12px;right:auto;width:420px;margin:0}}
 </style>
@@ -920,6 +937,14 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
     <button class="btn small" id="btnGpx">Export track (GPX)</button>
     <button class="btn small" id="btnReset">Reset walk</button>
   </div>
+  <div id="offlineBox" hidden>
+    <h2 class="menu-sub">Use it offline</h2>
+    <div class="pack"><div>Save this walk’s map<small id="packNote">About 5–8 MB, so use Wi-Fi.</small></div>
+      <div class="pack-act"><span class="pack-st" id="packStatus" hidden></span><button class="btn small" id="btnPack">Save</button></div></div>
+    <div class="opt-row" id="installRow" hidden><span>Install the app<small>Opens full-screen from your home screen and works without a connection.</small></span><button class="btn small" id="btnInstall">Install</button></div>
+    <p class="menu-note" id="iosNote" hidden>Share → Add to Home Screen before you set out; the home-screen app keeps its own copy of your progress.</p>
+  </div>
+  <p class="ver" id="appVer"></p>
 </div>
 
 <section class="sheet" id="sheet" aria-label="Walk guide">
@@ -1095,10 +1120,33 @@ var map=L.map('map',{zoomControl:false,attributionControl:true});
 map.attributionControl.setPrefix('Leaflet');
 map.attributionControl.setPosition('topleft');
 function tileUrl(){return 'https://webrd0{s}.is.autonavi.com/appmaptile?lang='+(S.labels==='zh'?'zh_cn':'en')+'&size=1&scale=1&style=8&x={x}&y={y}&z={z}'}
-var tileErr=0,tileOk=0;
-var tiles=L.tileLayer(tileUrl(),{subdomains:'1234',maxZoom:19,maxNativeZoom:18,attribution:'Map © AutoNavi'}).addTo(map);
-tiles.on('tileload',function(){tileOk++;if(banner.dataset.id==='tiles')hideBanner()});
-tiles.on('tileerror',function(){tileErr++;if(tileErr>=6&&tileOk===0)showBanner('The street map isn’t loading. GPS, distances and the stop list still work without it.','warn','tiles')});
+var tileErr=0,tileOk=0,tileErrAt=[];
+/* crossOrigin lets the service worker cache tiles (AutoNavi sends access-control-allow-origin:*); opaque responses are never cached */
+function makeTiles(cors){
+  var t=L.tileLayer(tileUrl(),{subdomains:'1234',maxZoom:19,maxNativeZoom:18,crossOrigin:cors,attribution:'Map © AutoNavi'});
+  t.on('tileload',onTileLoad);t.on('tileerror',onTileErr);return t.addTo(map);
+}
+function onTileLoad(){tileOk++;if(banner.dataset.id==='tiles')hideBanner()}
+var corsCheck=false;
+function onTileErr(e){
+  tileErr++;var now=Date.now();tileErrAt=tileErrAt.filter(function(t){return now-t<10000});tileErrAt.push(now);
+  /* safety net: CORS on and not one tile has loaded. If a CORS fetch of a failed tile fails where a plain one works,
+     AutoNavi has stopped sending the CORS header: rebuild the layer without it for this session (tiles load, uncached) */
+  var src=e&&e.tile&&e.tile.src;
+  if(tileErr>=6&&tileOk===0&&tiles.options.crossOrigin&&!corsCheck&&src&&navigator.onLine!==false){
+    corsCheck=true;
+    var again=function(){setTimeout(function(){corsCheck=false},30000)};/* not a CORS problem: check again at most every 30 s */
+    fetch(src,{mode:'cors',credentials:'omit',cache:'no-store'}).then(again,function(){
+      return fetch(src,{mode:'no-cors',cache:'no-store'}).then(function(){
+        if(tileOk)return;tileErr=0;tileErrAt=[];if(banner.dataset.id==='tiles')hideBanner();
+        map.removeLayer(tiles);tiles.off();tiles=makeTiles(false);
+      },again);
+    });
+  }
+  if(tileOk>0&&tileErrAt.length>=3)setNet(true,'tiles');/* tiles were loading and now fail: the connection has gone */
+  if(tileErr>=6&&tileOk===0)showBanner(NET.off?'You’re offline and this part of the map isn’t saved. GPS, distances, stops and cards still work.':'The street map isn’t loading. GPS, distances and the stop list still work without it.','warn','tiles');
+}
+var tiles=makeTiles(true);
 
 L.polyline([HOTEL].concat(STOPS,[HOTEL]).map(function(p){return[p.lat,p.lng]}),{className:'route',interactive:false}).addTo(map);
 var trailLayer=L.layerGroup().addTo(map);
@@ -1452,6 +1500,8 @@ $('#btnGpx').addEventListener('click',function(){
   if(!segs.length){toast('No track recorded yet');return}
   var body=segs.map(function(seg){return '<trkseg>'+seg.map(function(p){return '<trkpt lat="'+p[0]+'" lon="'+p[1]+'"><time>'+new Date(p[2]).toISOString()+'</time></trkpt>'}).join('')+'</trkseg>'}).join('');
   var gpx='<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Changsha Night Walk" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>Changsha night walk</name>'+body+'</trk></gpx>';
+  /* the share sheet where it takes files (iOS: Save to Files, AirDrop, WeChat); blob downloads are fragile in home-screen apps */
+  try{var f=new File([gpx],'changsha-walk-'+DAY+'.gpx',{type:'application/gpx+xml'});if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f]}).catch(function(){});return}}catch(e){}
   try{var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([gpx],{type:'application/gpx+xml'}));a.download='changsha-walk-'+DAY+'.gpx';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)}
   catch(e){toast('This browser can’t save files from here')}
 });
@@ -1548,12 +1598,24 @@ function openRoute(to,from){
   if(to||from||!NAV.route)computeRoute();else renderDir();
 }
 function endRoute(){navReq++;NAV.route=null;NAV.to=null;NAV.pending=false;NAV.layer.clearLayers();setDirMsg('');showDir(false)}
-function computeRoute(){
+function computeRoute(opts){
   NAV.pending=false;
   if(!NAV.from||!NAV.to){NAV.route=null;drawRoute();renderDir();return}
   var a=endWgs(NAV.from),b=endWgs(NAV.to);
   if(!a||!b){NAV.pending=true;NAV.route=null;drawRoute();renderDir();setDirMsg(geoOK()?'Waiting for your location…':'Your location isn’t available on this page. Choose a start point instead.');return}
   if(dist(ll(a),ll(b))<15){NAV.route=null;drawRoute();renderDir();setDirMsg('Start and destination are the same spot.');return}
+  /* offline fast path (WP4): no connection, so don't wait for routers that can't answer. A reroute keeps the route it has */
+  if(navigator.onLine===false){
+    navReq++;
+    if(opts&&opts.reroute&&NAV.route){setDirMsg('You’re offline, so the route can’t be updated. Still showing the previous one.');return}
+    NAV.route=null;drawRoute();renderDir();
+    var olink=amapRoute(NAV.from,NAV.to);
+    if(olink){$('#dirSum').hidden=false;$('#sumDist').textContent='';$('#sumTime').textContent='';$('#sumAmap').hidden=false;$('#sumAmap').href=olink}
+    if(typeof straightLine==='function')straightLine();/* WP3's straight-line mode, once merged */
+    var of=endLL(NAV.from),ot=endLL(NAV.to),od=of&&ot?dist(ll(of),ll(ot)):0;
+    setDirMsg('You’re offline, so walking directions can’t load'+(od?': '+endLabel(NAV.to)+' is '+fmtD(od)+' to the '+cardinal(bearing(ll(of),ll(ot)))+' in a straight line (about '+walkMin(od)+' min).':'.')+' They come back when you’re online again.');
+    return;
+  }
   var id=++navReq;
   if(!NAV.route){renderDir();setDirMsg('Finding a walking route…')}
   routeValhalla(a,b).catch(function(){return routeOSRM(a,b)}).then(function(r){
@@ -1612,7 +1674,7 @@ function updateNav(){
   if(total-along<20&&bd<40){box.className='nav-now';box.innerHTML='<span class="in">✓</span><span>You’ve arrived at '+esc(endLabel(NAV.to))+'</span>';markStep(r.steps.length-1);return}
   if(bd>Math.max(40,(acc||0)*1.2)){
     NAV.offCount++;box.className='nav-now off';box.innerHTML='<span class="in">'+fmtD(bd)+'</span><span>off the route. Finding a new one…</span>';
-    if(NAV.offCount>=2&&Date.now()-NAV.lastReroute>20000){NAV.lastReroute=Date.now();computeRoute()}
+    if(NAV.offCount>=2&&Date.now()-NAV.lastReroute>20000){NAV.lastReroute=Date.now();computeRoute({reroute:true})}
     return;
   }
   NAV.offCount=0;
@@ -1659,7 +1721,10 @@ function handlePick(el){
   else if(k==='map'){closePicker();startMapPick(PICK.which)}
 }
 function doSearch(q){
-  var id=++searchId;$('#pickResultsWrap').hidden=false;$('#pickResults').innerHTML='<p class="dir-msg">Searching…</p>';
+  var id=++searchId;$('#pickResultsWrap').hidden=false;
+  /* offline fast path (WP4): no search request that can't answer, straight to Amap instead */
+  if(navigator.onLine===false){var oc=me||HOTEL;$('#pickResults').innerHTML='<p class="dir-msg">You’re offline, so place search isn’t available. Choose one of your stops below, pick the spot on the map, or search in Amap.</p><a class="opt" target="_blank" rel="noopener" href="https://uri.amap.com/search?keyword='+encodeURIComponent(q)+'&city=430100&center='+oc.lng.toFixed(6)+','+oc.lat.toFixed(6)+'&callnative=1&src=changsha-night-walk"><span class="num ic-plain">A</span><span>Search “'+esc(q)+'” in Amap<small>Opens the Amap app</small></span></a>';return}
+  $('#pickResults').innerHTML='<p class="dir-msg">Searching…</p>';
   fetchJSON('https://photon.komoot.io/api/?q='+encodeURIComponent(q)+'&lat=28.19&lon=112.98&limit=8&lang=en&bbox=112.75,27.95,113.25,28.45',10000).then(function(j){
     if(id!==searchId)return;
     PICK.results=(j.features||[]).map(function(f){var p=f.properties||{},c=f.geometry.coordinates,g=w2g(c[1],c[0]);return{lat:g[0],lng:g[1],label:p.name||p.street||q,sub:[p.street&&p.name?p.street:'',p.district,p.city].filter(Boolean).join(', ')}});
@@ -1714,6 +1779,126 @@ document.querySelectorAll('[data-day]').forEach(function(b){b.addEventListener('
   }catch(e){toast('This browser can’t save the choice');return}
   location.reload();
 })});
+
+/* ---------- offline and install (WP4) ---------- */
+var VERSION='2026.09.25';
+/* the service worker needs https (GitHub Pages) or localhost; file:// and content:// copies run without it */
+var SWOK='serviceWorker' in navigator&&!!window.caches&&(location.protocol==='https:'||location.hostname==='localhost');
+var PACK_CACHE='cnw-tiles-pack-v1';/* same name as in sw.js */
+var NET={off:navigator.onLine===false,why:navigator.onLine===false?'boot':'',probeT:0};
+var netTag=document.createElement('span');netTag.id='netTag';$('#status').appendChild(netTag);
+function showNet(){netTag.hidden=!NET.off;netTag.textContent=NET.off?' · offline':''}/* the text is only there while it shows */
+showNet();
+function setNet(off,why){
+  if(off===NET.off){if(off&&why==='event')NET.why='event';return}
+  NET.off=off;NET.why=off?why:'';showNet();clearTimeout(NET.probeT);
+  if(off){
+    if(banner.hidden||['tiles','gps','wechat'].indexOf(banner.dataset.id)>=0)showBanner('Offline: saved map, stops and cards still work; routing and search need data.','warn','offline');
+    if(typeof say==='function')say('Offline. Saved map, stops and cards still work.');
+    if(why==='tiles')netProbe();
+    return;
+  }
+  if(banner.dataset.id==='offline'||banner.dataset.id==='tiles')hideBanner();
+  /* tiles that failed while offline stay blank in Leaflet: reload the layer if any did */
+  if([].some.call(document.querySelectorAll('#map img.leaflet-tile'),function(i){return i.complete&&!i.naturalWidth}))tiles.redraw();
+  if(!dirEl().hidden&&NAV.to&&!NAV.route&&!NAV.pending)computeRoute();
+}
+/* "offline" guessed from failing tiles (the phone still reports a connection): check again every 15 s */
+function netProbe(){NET.probeT=setTimeout(function(){
+  if(!NET.off||NET.why!=='tiles')return;
+  fetch('https://webrd01.is.autonavi.com/appmaptile?lang=en&size=1&scale=1&style=8&x=0&y=0&z=1',{method:'HEAD',mode:'no-cors',cache:'no-store'}).then(function(){setNet(false)},netProbe);
+},15000)}
+addEventListener('offline',function(){setNet(true,'event')});
+addEventListener('online',function(){setNet(false)});
+
+/* "Save this walk's map": every tile z13-18 around the walk, fetched through the service worker into its pack cache */
+var PACK={run:false};
+function packUrls(minZ,maxZ){
+  var b=L.latLngBounds(ALL.concat([HOTEL,HOME]).map(function(p){return[p.lat,p.lng]})).pad(0.12),out=[];
+  for(var z=minZ;z<=maxZ;z++){
+    var nw=map.project(b.getNorthWest(),z).divideBy(256).floor(),se=map.project(b.getSouthEast(),z).divideBy(256).floor();
+    for(var x=nw.x;x<=se.x;x++)for(var y=nw.y;y<=se.y;y++)out.push(L.Util.template(tileUrl(),{s:'1234'[(x+y)%4],x:x,y:y,z:z})+'&pack=1');
+  }
+  return out;
+}
+function tileKey(u){var x=new URL(u);x.hostname='webrd01.is.autonavi.com';x.searchParams.delete('pack');return x.href}/* the cache key sw.js uses */
+function packState(){
+  var urls=packUrls(13,18);
+  return caches.has(PACK_CACHE).then(function(h){return h?caches.open(PACK_CACHE).then(function(c){return c.keys()}):[]}).then(function(reqs){
+    var have={};reqs.forEach(function(r){have[r.url]=1});
+    return{total:urls.length,missing:urls.filter(function(u){return !have[tileKey(u)]})};
+  });
+}
+function packUI(label,status,disabled){var b=$('#btnPack'),s=$('#packStatus');b.textContent=label;b.disabled=!!disabled;s.hidden=!status;s.textContent=status||''}
+function refreshPack(){
+  if(!SWOK||PACK.run)return;
+  $('#packNote').textContent='About 5–8 MB, so use Wi-Fi. Saves the '+(S.labels==='zh'?'Chinese':'English')+' map labels only.';
+  packState().then(function(p){
+    if(PACK.run)return;var have=p.total-p.missing.length;
+    if(!p.missing.length)packUI('Saved','Saved '+p.total+' of '+p.total,true);
+    else packUI('Save',have?'Saved '+have+' of '+p.total:'',false);
+  }).catch(function(){});
+}
+function swControl(ms){/* the pack is stored by the service worker, so it must control this page first */
+  if(navigator.serviceWorker.controller)return Promise.resolve(true);
+  return new Promise(function(res){
+    var t=setTimeout(function(){res(!!navigator.serviceWorker.controller)},ms);
+    navigator.serviceWorker.addEventListener('controllerchange',function(){clearTimeout(t);res(true)},{once:true});
+  });
+}
+function savePack(){
+  if(PACK.run)return;
+  if(navigator.onLine===false){packUI('Save','You’re offline. Connect to Wi-Fi and try again.',false);return}
+  PACK.run=true;packUI('Saving…','Getting ready…',true);
+  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});
+  swControl(10000).then(function(ok){if(!ok)throw new Error('no service worker');return packState()}).then(function(p){
+    var todo=p.missing,total=p.total,saved=total-todo.length,failed=0,i=0;
+    function show(){$('#packStatus').textContent='Saved '+saved+' of '+total+(failed?' · '+failed+' failed':'')}
+    function worker(){
+      if(i>=todo.length)return Promise.resolve();
+      var u=todo[i++],ctl=typeof AbortController!=='undefined'?new AbortController():null,t=setTimeout(function(){if(ctl)ctl.abort()},20000);
+      return fetch(u,ctl?{mode:'cors',credentials:'omit',signal:ctl.signal}:{mode:'cors',credentials:'omit'}).then(function(r){return r.ok},function(){return false})
+        .then(function(ok){clearTimeout(t);if(ok)saved++;else failed++;show();return worker()});
+    }
+    packUI('Saving…','Saved '+saved+' of '+total,true);
+    if(typeof say==='function')say('Saving the map for offline use');
+    return Promise.all([worker(),worker(),worker(),worker()]).then(function(){
+      PACK.run=false;
+      var msg='Saved '+saved+' of '+total+(failed?' · '+failed+' failed':'');
+      packUI(failed?'Retry failed':'Saved',msg,!failed);
+      if(typeof say==='function')say(failed?msg:'Map saved for offline use');
+      if(menu.hidden)toast(failed?'Map saving stopped: '+failed+' tiles failed. Retry in Settings.':'Map saved for offline use');
+    });
+  }).catch(function(){PACK.run=false;packUI('Save','Couldn’t start saving. Reload the page with a connection and try again.',false)});
+}
+$('#btnPack').addEventListener('click',savePack);
+$('#btnMenu').addEventListener('click',function(){if(!menu.hidden)refreshPack()});
+document.querySelectorAll('[data-lab]').forEach(function(b){b.addEventListener('click',refreshPack)});
+$('#offlineBox').hidden=!SWOK;
+
+/* install: Android gets a button from beforeinstallprompt, iOS Safari a note */
+var installEvt=null;
+addEventListener('beforeinstallprompt',function(e){e.preventDefault();installEvt=e;$('#installRow').hidden=false});
+addEventListener('appinstalled',function(){installEvt=null;$('#installRow').hidden=true});
+$('#btnInstall').addEventListener('click',function(){var e=installEvt;if(!e)return;installEvt=null;$('#installRow').hidden=true;try{e.prompt()}catch(x){}});
+if(navigator.standalone===false)$('#iosNote').hidden=false;
+
+function showVer(){$('#appVer').textContent='v'+VERSION+(SWOK&&navigator.serviceWorker.controller?' · saved on this phone for offline use':'')}
+showVer();
+if(SWOK){
+  var hadCtl=!!navigator.serviceWorker.controller;
+  setTimeout(function(){navigator.serviceWorker.register('sw.js').catch(function(){})},1500);
+  navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='app-updated')toast('App updated','Reload',function(){location.reload()})});
+  navigator.serviceWorker.addEventListener('controllerchange',function(){
+    showVer();if(hadCtl)return;hadCtl=true;
+    /* first time the worker takes over: put the tiles already on screen into its cache, so this view also works offline */
+    if(tiles.options.crossOrigin)[].slice.call(document.querySelectorAll('#map img.leaflet-tile-loaded'),0,80).forEach(function(i){fetch(i.src,{mode:'cors',credentials:'omit'}).catch(function(){})});
+  });
+}
+/* WeChat's in-app browser: GPS, the offline copy and install all work better in the phone's own browser */
+if(/MicroMessenger/i.test(navigator.userAgent))showBanner('Tap ··· then Open in browser for GPS and offline use.','warn','wechat');
+/* home-screen shortcut and deep link: ./?card=home opens the hotel taxi card (the query is dropped so a reload doesn't reopen it) */
+try{if(new URLSearchParams(location.search).get('card')==='home'){history.replaceState(history.state,'',location.pathname+location.hash);showCard('home')}}catch(e){}
 
 /* ---------- boot ---------- */
 syncSettings();syncDay();drawTrail();ui();fitAll();

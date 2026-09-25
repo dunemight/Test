@@ -1,0 +1,21 @@
+{
+  "id": "/Test/",
+  "name": "Changsha Night Walk",
+  "short_name": "Night Walk",
+  "description": "Offline-friendly walking guide for central Changsha with live GPS, stops and a driver card.",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c1426",
+  "theme_color": "#0c1426",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Hotel taxi card", "short_name": "Taxi card", "url": "./?card=home", "icons": [{"src": "icon-192.png", "sizes": "192x192"}]}
+  ]
+}
