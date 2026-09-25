@@ -10,7 +10,8 @@ const TILE_HOST = /^webrd0[1-4]\.is\.autonavi\.com$/;
 const BASE = new URL('./', self.location).pathname;   // e.g. /Test/
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(SHELL_CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' so the shell is the index.html on the server now, never an older copy from the browser's HTTP cache
+  e.waitUntil(caches.open(SHELL_CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys

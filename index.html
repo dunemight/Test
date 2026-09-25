@@ -675,7 +675,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --bg:#e9edf3; --panel:#ffffff; --panel-2:#f1f4f8; --ink:#131a2b; --muted:#5a6480; --line:#d9dfe9;
   --gold:#b27a14; --gold-ink:#1b1404; --chili:#c3321f; --jade:#1d8a62; --me:#1f6fe5; --bad:#c42f2f;
   /* fills that carry white text (WCAG AA in both themes); the bright tokens above stay for the dot, trail, accuracy circle and route line */
-  --me-fill:#1f6fe5; --jade-fill:#1c845e; --bad-fill:#c42f2f; --chili-fill:#c3321f; --gold-text:#9b6a11; --ctl-line:#b9c3d6;
+  --me-fill:#1f6fe5; --jade-fill:#1c845e; --bad-fill:#c42f2f; --chili-fill:#c3321f; --gold-text:#8a5e0e; --jade-text:#17704f; --ctl-line:#b9c3d6;
   --shadow:0 6px 22px rgba(17,26,43,.16);
   --font:"Avenir Next","SF Pro Rounded","Segoe UI Variable Text",system-ui,-apple-system,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
   --font-zh:"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;
@@ -684,14 +684,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
   :root:not([data-theme="light"]){
     --bg:#0c1426; --panel:#151f38; --panel-2:#1c2847; --ink:#eef1f7; --muted:#aab4cd; --line:#28355a;
     --gold:#e8b04a; --gold-ink:#1b1404; --chili:#e0473a; --jade:#34b386; --me:#4c9bff; --bad:#f0625a;
-    --me-fill:#1f6fe5; --jade-fill:#1c845e; --bad-fill:#c42f2f; --chili-fill:#c3321f; --gold-text:#e8b04a; --ctl-line:#3a4b7a;
+    --me-fill:#1f6fe5; --jade-fill:#1c845e; --bad-fill:#c42f2f; --chili-fill:#c3321f; --gold-text:#e8b04a; --jade-text:#34b386; --ctl-line:#3a4b7a;
     --shadow:0 8px 26px rgba(0,0,0,.5);
   }
 }
 :root[data-theme="dark"]{
   --bg:#0c1426; --panel:#151f38; --panel-2:#1c2847; --ink:#eef1f7; --muted:#aab4cd; --line:#28355a;
   --gold:#e8b04a; --gold-ink:#1b1404; --chili:#e0473a; --jade:#34b386; --me:#4c9bff; --bad:#f0625a;
-  --me-fill:#1f6fe5; --jade-fill:#1c845e; --bad-fill:#c42f2f; --chili-fill:#c3321f; --gold-text:#e8b04a; --ctl-line:#3a4b7a;
+  --me-fill:#1f6fe5; --jade-fill:#1c845e; --bad-fill:#c42f2f; --chili-fill:#c3321f; --gold-text:#e8b04a; --jade-text:#34b386; --ctl-line:#3a4b7a;
   --shadow:0 8px 26px rgba(0,0,0,.5);
 }
 /* the theme follows Night mode (on by default): data-theme="dark" is set before first paint and by syncSettings */
@@ -805,9 +805,9 @@ button,a,.sheet,.topbar,.dir,.picker{touch-action:manipulation}
 .closer .cl-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .closer .cl-d{flex:none;white-space:pre}
 .sheet:not([data-state="normal"]) #nextCloser,.sheet.pop-open #nextCloser{display:none}
-/* short phones: while a map popup is open the sheet keeps only its handle and the next card, so a stop's four 44 px chips (two rows)
-   fit above it; everything comes back when the popup closes */
-@media (max-height:700px){.sheet.pop-open[data-state="normal"]>:not(.handle):not(.next){display:none}}
+/* pop-min (set by popupopen when the popup would not fit above the full sheet): the sheet keeps only its handle and the next card;
+   everything comes back when the popup closes */
+.sheet.pop-min[data-state="normal"]>:not(.handle):not(.next){display:none}
 .zh{font-family:var(--font-zh);color:var(--muted);font-size:15px}
 .meta{display:flex;flex-wrap:wrap;column-gap:12px;align-items:baseline;margin-top:3px;font-variant-numeric:tabular-nums;color:var(--muted);font-size:15px}
 .meta b{font-size:22px;color:var(--ink)}
@@ -864,7 +864,7 @@ button,a,.sheet,.topbar,.dir,.picker{touch-action:manipulation}
 .pills{display:flex;flex-wrap:wrap;gap:4px 6px;margin:6px 0 0}
 .pills:empty{display:none}
 .oh,.badge{display:inline-block;font-size:12.5px;font-weight:700;line-height:1.35;padding:2px 8px;border-radius:999px;background:var(--panel-2)}
-.oh[data-s=open],.oh[data-s=always]{color:var(--jade)}
+.oh[data-s=open],.oh[data-s=always]{color:var(--jade-text)}/* --jade on --panel-2 is 3.9:1 in light mode */
 .oh[data-s=soon]{color:var(--gold-text)}
 .oh[data-s=closed]{color:var(--bad)}
 .badge{font-weight:650;color:var(--muted)}
@@ -937,7 +937,7 @@ path.acc{fill:var(--me);fill-opacity:.12;stroke:var(--me);stroke-opacity:.4;stro
 .dcard .py{font-size:17px;color:#6b5a3a;margin:0 0 6px}
 .dcard .en{color:#555;font-size:15px;margin:0}
 .dcard .addr{font-family:var(--font-zh);font-size:20px;font-weight:700;line-height:1.35;margin:10px 0 0;color:#141414;word-break:break-all;text-wrap:balance}
-.dcard .tel{display:inline-block;margin-top:12px;font-size:19px;font-weight:700;color:#0a58ca;text-decoration:none}
+.dcard .tel{display:inline-flex;align-items:center;min-height:44px;margin-top:4px;font-size:19px;font-weight:700;color:#0a58ca;text-decoration:none}
 .dcard .ans{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
 .dcard .an{flex:1 1 0;max-width:140px;min-width:0;min-height:54px;padding:6px 8px;border-radius:12px;border:1px solid #e2dac8;background:#f1ece0;color:#141414;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font:inherit}
 .dcard .an span{font-family:var(--font-zh);font-size:22px;font-weight:700;line-height:1.2}
@@ -1932,20 +1932,35 @@ map.on('popupopen',function(e){
   openPop=e.popup;placeToast();/* a toast that is up moves to the top slot, out of the band this popup is panned into */
   if(!banner.hidden&&banner.dataset.id==='wake')hideBanner();/* a one-time hint, already seen: the place being opened matters more */
   sheet.classList.add('pop-open');/* the Closer chip steps aside while a popup is open: on short phones it cost the popup its chips */
-  var bottom=dirEl().hidden?(sheet.hidden?0:sheetH()):dirH(),top=Math.max(70+SAT,toastTop()+6),o=e.popup.options;
-  /* below a banner that is up (resume, location, offline), when that still leaves the popup room for its chips */
-  var bt=topOcc();if(bt>top&&innerHeight-bottom-10-bt-40>=160)top=bt;
-  o.autoPanPaddingTopLeft=L.point(10,top);
-  /* the pin itself hangs 22 px below the popup's tip (25 for the next stop), so a popup with room to spare keeps 16 px more clear of the panel below */
-  o.autoPanPaddingBottomRight=L.point(66,bottom+10+16);
-  /* on short phones a long blurb would push the chips under the sheet, so the popup scrolls instead
-     (40 = content margins 18 + wrapper border 2 + tip 20). Where there is room the cap keeps the pin clear of the panel as well
-     (it hangs 22 px below the tip, 12 more than the 10 px gap, plus 2 for rounding); on short phones every line counts, and the
-     panel may cover the foot of the pin (12 px at most, so its number stays in view) */
-  var room=innerHeight-bottom-10-top-40;
-  o.maxHeight=Math.max(120,room>=220?room-14:room);
-  fitPop(e.popup);
+  var top0=Math.max(70+SAT,toastTop()+6),o=e.popup.options;
+  function lay(){
+    var top=top0,bottom=dirEl().hidden?(sheet.hidden?0:sheetH()):dirH();
+    /* below a banner that is up (resume, location, offline), when that still leaves the popup room for its chips */
+    var bt=topOcc();if(bt>top&&innerHeight-bottom-10-bt-40>=160)top=bt;
+    o.autoPanPaddingTopLeft=L.point(10,top);
+    /* the pin itself hangs 22 px below the popup's tip (25 for the next stop), so a popup with room to spare keeps 16 px more clear of the panel below */
+    o.autoPanPaddingBottomRight=L.point(66,bottom+10+16);
+    /* on short phones a long blurb would push the chips under the sheet, so the popup scrolls instead
+       (40 = content margins 18 + wrapper border 2 + tip 20). Where there is room the cap keeps the pin clear of the panel as well
+       (it hangs 22 px below the tip, 12 more than the 10 px gap, plus 2 for rounding); on short phones every line counts, and the
+       panel may cover the foot of the pin (12 px at most, so its number stays in view) */
+    var room=innerHeight-bottom-10-top-40;
+    o.maxHeight=Math.max(120,room>=220?room-14:room);
+    fitPop(e.popup);
+  }
+  lay();
+  /* pop-min: when the full sheet leaves the popup too little room (its text dropped or squashed under two lines, or its chips cut;
+     a stop's four 44 px chips need two rows, and a toast may take the top slot), the sheet keeps only its handle and the next card
+     while the popup is open, and the popup is fitted again */
+  var c=e.popup._contentNode;
+  if(c&&dirEl().hidden&&!sheet.hidden&&sheetState()==='normal'&&popTight(c)){sheet.classList.add('pop-min');lay()}
 });
+function popTight(c){
+  if(c.classList.contains('pop-nb'))return true;
+  var a=c.querySelector('.acts'),b=c.querySelector('.pop-body');
+  if(a&&a.getBoundingClientRect().bottom>c.getBoundingClientRect().bottom+0.5)return true;
+  return !!b&&b.scrollHeight>b.clientHeight+1&&b.clientHeight<40;
+}
 /* A capped popup keeps its name, pills, distance and chips whole and scrolls only the body (hours, blurb). When those do not
    fit the cap, it sheds, in this order: the price words and an "Open late" the pill already says (pop-c; the body shows the
    price), then the second line of the name and some spacing (pop-t), then the price and "Open late" badges (pop-p; the
@@ -1975,10 +1990,10 @@ function fitPop(pp){
 }
 map.on('popupclose',function(e){
   if(openPop!==e.popup)return;
-  /* on short phones the sheet was cut down to its next card for the popup (CSS); when it grows back, a place the popup was
-     showing is not left under it (unless follow is on: then the map goes back to the dot anyway) */
-  var grew=sheetState()==='normal'&&matchMedia('(max-height:700px)').matches,ll=e.popup.getLatLng();
-  openPop=null;sheet.classList.remove('pop-open');
+  /* the sheet was cut down to its next card for the popup (pop-min); when it grows back, a place the popup was showing is not
+     left under it (unless follow is on: then the map goes back to the dot anyway) */
+  var grew=sheet.classList.contains('pop-min'),ll=e.popup.getLatLng();
+  openPop=null;sheet.classList.remove('pop-open','pop-min');
   if(grew&&ll)setTimeout(function(){
     if(openPop||follow||sheetState()!=='normal')return;/* another popup opened, or the map follows the dot */
     var y=map.latLngToContainerPoint(ll).y,lim=innerHeight-sheetH()-40;
@@ -2395,7 +2410,7 @@ function rowHtml(s){
   var r=s.role,base=r==='base'||r==='home',c=function(act,label,suf){return '<button class="chip" data-act="'+act+'" data-id="'+s.id+'">'+label+'<span class="sr-only">'+esc(suf+s.name)+'</span></button>'};
   /* the chips' visible words come first; the hidden suffix makes each of the many "Route"s etc. distinct for screen readers */
   var acts=(base?'':c('fly','Map',' of '))+c('route','Route',' to ');
-  if(r==='stop'||r==='extra')acts+=c('visit','Done',': ')+(r==='stop'?'<button class="chip" data-act="unskip" data-id="'+s.id+'" hidden>Unskip</button>':'');
+  if(r==='stop'||r==='extra')acts+=c('visit','Done',': ')+(r==='stop'?'<button class="chip" data-act="unskip" data-id="'+s.id+'" hidden>Unskip<span class="sr-only">'+esc(' '+s.name)+'</span></button>':'');
   else acts+=c('card','Taxi card',' for ');
   var body=hrsHtml(s)+(s.blurb?'<p>'+esc(s.blurb)+'</p>':'');
   if(body)acts+='<button class="more" data-act="more" aria-expanded="false" hidden>More</button>';
@@ -2702,7 +2717,7 @@ function openHelp(opener){
   helpFocus=opener||document.activeElement;
   closeMenu();map.closePopup();hideToast();
   renderHelp();hp.hidden=false;$('#btnHelp').setAttribute('aria-expanded','true');
-  typeof syncModal==='function'&&syncModal();/* WP2: needs #help in openModal() */
+  typeof syncModal==='function'&&syncModal();/* WP2: inert behind (openModal() covers #help), Tab stays inside */
   typeof openLayer==='function'&&openLayer('help',function(){closeHelp(true)});/* WP2: Back closes Help */
   $('#helpTitle').focus();
 }
