@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#101a30">
+<meta name="theme-color" content="#0c1426"><meta name="color-scheme" content="light dark">
+<script>try{var d=localStorage.getItem('changsha-walk-day')==='tomorrow'?'changsha-night-walk-v1-tomorrow':'changsha-night-walk-v1';if((JSON.parse(localStorage.getItem(d)||'{}').night)!==false)document.documentElement.dataset.theme='dark'}catch(e){}</script>
 <title>Changsha Night Walk — live GPS</title>
 <style>/* required styles */
 
@@ -671,22 +672,39 @@ svg.leaflet-image-layer.leaflet-interactive path {
 :root{
   --bg:#e9edf3; --panel:#ffffff; --panel-2:#f1f4f8; --ink:#131a2b; --muted:#5a6480; --line:#d9dfe9;
   --gold:#b27a14; --gold-ink:#1b1404; --chili:#c3321f; --jade:#1d8a62; --me:#1f6fe5; --bad:#c42f2f;
+  /* fills that carry white text (WCAG AA in both themes); the bright tokens above stay for the dot, trail, accuracy circle and route line */
+  --me-fill:#1f6fe5; --jade-fill:#1c845e; --bad-fill:#c42f2f; --chili-fill:#c3321f; --gold-text:#9b6a11; --ctl-line:#b9c3d6;
   --shadow:0 6px 22px rgba(17,26,43,.16);
   --font:"Avenir Next","SF Pro Rounded","Segoe UI Variable Text",system-ui,-apple-system,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
   --font-zh:"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0c1426; --panel:#151f38; --panel-2:#1c2847; --ink:#eef1f7; --muted:#9aa6c2; --line:#28355a;
+    --bg:#0c1426; --panel:#151f38; --panel-2:#1c2847; --ink:#eef1f7; --muted:#aab4cd; --line:#28355a;
     --gold:#e8b04a; --gold-ink:#1b1404; --chili:#e0473a; --jade:#34b386; --me:#4c9bff; --bad:#f0625a;
+    --me-fill:#1f6fe5; --jade-fill:#1c845e; --bad-fill:#c42f2f; --chili-fill:#c3321f; --gold-text:#e8b04a; --ctl-line:#3a4b7a;
     --shadow:0 8px 26px rgba(0,0,0,.5);
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0c1426; --panel:#151f38; --panel-2:#1c2847; --ink:#eef1f7; --muted:#9aa6c2; --line:#28355a;
+  --bg:#0c1426; --panel:#151f38; --panel-2:#1c2847; --ink:#eef1f7; --muted:#aab4cd; --line:#28355a;
   --gold:#e8b04a; --gold-ink:#1b1404; --chili:#e0473a; --jade:#34b386; --me:#4c9bff; --bad:#f0625a;
+  --me-fill:#1f6fe5; --jade-fill:#1c845e; --bad-fill:#c42f2f; --chili-fill:#c3321f; --gold-text:#e8b04a; --ctl-line:#3a4b7a;
   --shadow:0 8px 26px rgba(0,0,0,.5);
 }
+/* the theme follows Night mode (on by default): data-theme="dark" is set before first paint and by syncSettings */
+:root{color-scheme:light dark}
+:root[data-theme=dark]{color-scheme:dark}
+/* iOS Increase Contrast / Android high-contrast text: stronger edges and secondary text */
+@media (prefers-contrast: more){
+  :root{--line:#8296b7;--ctl-line:#8296b7;--muted:#3f4966}
+  :root[data-theme=dark]{--line:#5a70b0;--ctl-line:#5a70b0;--muted:#c3cbe0}
+}
+@media (prefers-contrast: more) and (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--line:#5a70b0;--ctl-line:#5a70b0;--muted:#c3cbe0}
+}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}
+[tabindex="-1"]:focus{outline:none}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;overscroll-behavior:none}
 body{background:var(--bg);color:var(--ink);font:15px/1.4 var(--font);-webkit-font-smoothing:antialiased;overflow:hidden;-webkit-tap-highlight-color:transparent}
@@ -712,18 +730,19 @@ button,a,.sheet,.topbar,.dir,.picker{touch-action:manipulation}
 .status[data-s="search"] i{background:var(--gold);animation:pulse 1.1s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.25}}
 .fabs{display:flex;flex-direction:column;gap:8px}
-.fab{width:46px;height:46px;border-radius:15px;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;padding:0}
+.fab{width:46px;height:46px;border-radius:15px;border:1px solid var(--ctl-line);background:var(--panel);box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;padding:0}
 .fab svg{width:22px;height:22px}
 .fab[aria-pressed="true"],.fab[aria-expanded="true"]{background:var(--gold);color:var(--gold-ink);border-color:transparent}
 
-.banner{position:fixed;z-index:1001;top:calc(env(safe-area-inset-top,0px) + 60px);left:10px;right:66px;padding:11px 13px;border-radius:14px;background:var(--panel);box-shadow:var(--shadow);font-size:13.5px;line-height:1.45;border-left:5px solid var(--gold)}
+.banner{position:fixed;z-index:1001;top:calc(env(safe-area-inset-top,0px) + 60px);left:10px;right:66px;display:flex;align-items:flex-start;gap:2px;padding:11px 0 11px 13px;border-radius:14px;background:var(--panel);box-shadow:var(--shadow);font-size:13.5px;line-height:1.45;border-left:5px solid var(--gold)}
 .banner[data-k="bad"]{border-left-color:var(--bad)}
-.banner button{margin-left:6px;border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;padding:0}
-.toast{position:fixed;z-index:1600;left:50%;top:auto;bottom:calc(var(--sheet-h,400px) + 10px);transform:translateX(-50%);padding:10px 16px;border-radius:16px;background:var(--jade);color:#fff;font-weight:650;box-shadow:var(--shadow);white-space:normal;text-align:center;pointer-events:none;width:max-content;max-width:calc(100vw - 24px);display:flex;align-items:center;justify-content:center}
+.banner-t{flex:1 1 auto;min-width:0}
+.banner-x{flex:none;width:44px;height:44px;margin:-11px 0;border:0;border-radius:12px;background:none;color:var(--muted);font-size:26px;line-height:1;cursor:pointer;padding:0}
+.toast{position:fixed;z-index:1600;left:50%;top:auto;bottom:calc(var(--sheet-h,400px) + 10px);transform:translateX(-50%);padding:10px 16px;border-radius:16px;background:var(--jade-fill);color:#fff;font-weight:650;box-shadow:var(--shadow);white-space:normal;text-align:center;pointer-events:none;width:max-content;max-width:calc(100vw - 24px);display:flex;align-items:center;justify-content:center}
 .toast.narrow{left:10px;transform:none;max-width:calc(100vw - 76px)}
 /* while a popup or the route panel is open it docks over the GPS pill, a band that popups and route fits keep clear of */
 .toast.top{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto;left:10px;transform:none;max-width:calc(100vw - 76px)}
-.toast button{pointer-events:auto;margin-left:10px;min-height:36px;border:0;border-radius:10px;padding:0 12px;background:rgba(255,255,255,.2);color:inherit;font-weight:700;cursor:pointer;flex:none}
+.toast button{pointer-events:auto;margin:-4px 0 -4px 10px;min-height:44px;border:0;border-radius:10px;padding:0 12px;background:rgba(0,0,0,.24);color:inherit;font-weight:700;cursor:pointer;flex:none}
 
 /* settings */
 .menu{position:fixed;z-index:1500;top:calc(env(safe-area-inset-top,0px) + 10px);right:66px;width:min(310px,calc(100vw - 86px));background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:6px 14px 12px}
@@ -731,14 +750,15 @@ button,a,.sheet,.topbar,.dir,.picker{touch-action:manipulation}
 .opt-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
 .opt-row small{display:block;color:var(--muted);font-size:12px;line-height:1.35;margin-top:2px}
 .opt-row input{width:22px;height:22px;accent-color:var(--gold);flex:none}
-.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:none}
-.seg button{border:0;background:none;padding:6px 12px;cursor:pointer;font-weight:600;font-size:13px}
+.seg{display:flex;border:1px solid var(--ctl-line);border-radius:10px;overflow:hidden;flex:none}
+.seg button{min-height:44px;border:0;background:none;padding:6px 12px;cursor:pointer;font-weight:600;font-size:13px}
 .seg button[aria-pressed="true"]{background:var(--gold);color:var(--gold-ink)}
 .menu-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .menu-acts .btn{flex:1 1 auto}
-.daybar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;font-size:13.5px;color:var(--muted);font-weight:650}
+.daybar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 8px;font-size:13.5px;color:var(--muted);font-weight:650}
 .daybar .seg{min-width:0}
 .daybar .seg button{color:var(--ink);white-space:nowrap}
+.daybar .seg button[aria-pressed="true"]{color:var(--gold-ink)}/* dark ink on gold, as in Settings (the rule above would otherwise win) */
 
 /* bottom sheet */
 .sheet{position:fixed;z-index:1000;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;background:var(--panel);border-radius:24px 24px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.22);padding:0 16px calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;flex-direction:column;max-height:calc(100vh - env(safe-area-inset-top,0px) - 228px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 228px)}
@@ -746,8 +766,10 @@ button,a,.sheet,.topbar,.dir,.picker{touch-action:manipulation}
 .sheet>*{flex:none}
 .sheet .list{flex:1 1 auto;min-height:96px;max-height:none}
 .sheet.list-open .stats,.sheet.list-open .hint{display:none}
-.handle{display:block;width:100%;height:24px;border:0;background:none;cursor:pointer;padding:0}
-.handle::before{content:"";display:block;width:42px;height:5px;border-radius:3px;background:var(--line);margin:9px auto 0}
+/* short phones: the 44 px targets and larger type would squeeze the open list, so the walk switcher steps aside while it is open */
+@media (max-height:700px){.sheet.list-open .daybar{display:none}}
+.handle{display:block;width:100%;height:36px;border:0;background:none;cursor:pointer;padding:0}
+.handle::before{content:"";display:block;width:42px;height:5px;border-radius:3px;background:var(--line);margin:12px auto 0}
 .sheet .next{display:grid;grid-template-columns:70px 1fr auto;gap:12px;align-items:center}
 .compass{width:70px;height:70px;border-radius:50%;background:var(--panel-2);display:grid;place-items:center;position:relative;border:1px solid var(--line)}
 .compass .n{position:absolute;top:4px;left:0;right:0;text-align:center;font-size:10px;font-weight:700;color:var(--muted)}
@@ -755,43 +777,48 @@ button,a,.sheet,.topbar,.dir,.picker{touch-action:manipulation}
 .compass.idle svg{opacity:.3}
 .next-title{display:flex;align-items:center;gap:8px;min-width:0}
 .next h2{flex:1 1 auto;min-width:0;margin:0;font-size:18px;line-height:1.2;font-weight:700;letter-spacing:-.01em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.zh{font-family:var(--font-zh);color:var(--muted);font-size:14px}
-.meta{display:flex;flex-wrap:wrap;column-gap:12px;align-items:baseline;margin-top:3px;font-variant-numeric:tabular-nums;color:var(--muted);font-size:13.5px}
-.meta b{font-size:18px;color:var(--ink)}
+.zh{font-family:var(--font-zh);color:var(--muted);font-size:15px}
+.meta{display:flex;flex-wrap:wrap;column-gap:12px;align-items:baseline;margin-top:3px;font-variant-numeric:tabular-nums;color:var(--muted);font-size:15px}
+.meta b{font-size:22px;color:var(--ink)}
 .next-acts{display:flex;flex-direction:column;gap:6px}
-.num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--chili);color:#fff;display:inline-grid;place-items:center;font-weight:800;font-size:13px}
+.num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--chili-fill);color:#fff;display:inline-grid;place-items:center;font-weight:800;font-size:13px}
 .num.home{background:var(--gold);color:var(--gold-ink)}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 10px}
-.stat{background:var(--panel-2);border-radius:12px;padding:8px 10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 8px}
+.stat{background:var(--panel-2);border-radius:12px;padding:8px}
 .stat b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
-.stat span{font-size:12px;color:var(--muted)}
-.controls{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,.9fr);gap:8px}
-.controls .btn{padding:0 8px;font-size:14px;overflow:hidden;text-overflow:ellipsis;flex-direction:column;line-height:1.1}
+.stat span{font-size:13px;color:var(--muted)}
+.controls{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.72fr) minmax(0,1fr);gap:8px}/* widths follow the longest labels: "Start tracking", "Hotel" + distance, "Hide stops" */
+.controls .btn{padding:0 6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;flex-direction:column;line-height:1.1}
 .controls .btn small{font-size:11.5px;font-weight:600;opacity:.8}
-.btn{min-height:46px;padding:0 14px;border-radius:13px;border:1px solid var(--line);background:var(--panel-2);font-weight:650;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}
-.btn.small{min-height:36px;padding:0 12px;font-size:13.5px;border-radius:10px}
+@media (max-width:350px){.controls .btn{font-size:13px;padding:0 4px}}
+.btn{min-height:46px;padding:0 14px;border-radius:13px;border:1px solid var(--ctl-line);background:var(--panel-2);font-weight:650;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}
+.btn.small{min-height:44px;padding:0 12px;font-size:13.5px;border-radius:10px}
 .btn.primary{background:var(--gold);color:var(--gold-ink);border-color:transparent}
-.btn.primary.on{background:var(--chili);color:#fff}
-.hint{margin:10px 2px 2px;font-size:12.5px;color:var(--muted);line-height:1.4}
+.btn.primary.on{background:var(--chili-fill);color:#fff}
+.hint{margin:8px 2px 0;font-size:13.5px;color:var(--muted);line-height:1.4}
 .list{max-height:max(200px,calc(100vh - 500px));max-height:max(200px,calc(100dvh - 500px));overflow:auto;margin:8px -16px 0;padding:0 16px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .row{display:grid;grid-template-columns:30px 1fr auto;gap:10px;padding:13px 0;border-top:1px solid var(--line)}
-.row h3{margin:0;font-size:15.5px;line-height:1.25}
+.row h4{margin:0;font-size:15.5px;line-height:1.25}
 .row p{margin:5px 0 9px;color:var(--muted);font-size:13.5px;line-height:1.45;max-width:60ch}
-.row.done .num{background:var(--jade)}
-.row.opt .num,.pin.opt{background:var(--panel);color:var(--gold);box-shadow:inset 0 0 0 2px var(--gold)}
-.row.done.opt .num{background:var(--jade);color:#fff;box-shadow:none}
+.row.done .num{background:var(--jade-fill)}
+.row.opt .num,.pin.opt{background:var(--panel);color:var(--gold-text);box-shadow:inset 0 0 0 2px var(--gold)}
+.row.done.opt .num{background:var(--jade-fill);color:#fff;box-shadow:none}
 .d{text-align:right;white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums}
-.d small{display:block;color:var(--muted);font-weight:500;font-size:12px}
-.acts{display:flex;flex-wrap:wrap;gap:6px}
-.chip{min-height:34px;padding:0 11px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}
+.d small{display:block;color:var(--muted);font-weight:500;font-size:13px}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--ctl-line);background:var(--panel-2);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}
 .group{margin:16px 0 2px;font-size:14px;color:var(--muted);font-weight:650}
-.note{font-size:12.5px;color:var(--muted);margin:12px 0 6px;line-height:1.45}
+.note{font-size:13.5px;color:var(--muted);margin:12px 0 6px;line-height:1.45}
 
 /* map markers */
 .pin-wrap{background:none;border:0}
-.pin{width:30px;height:30px;border-radius:50%;background:var(--chili);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.4);transition:transform .2s}
+.pin{width:30px;height:30px;border-radius:50%;background:var(--chili-fill);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.4);transition:transform .2s}
 .pin.opt{border-color:#fff}
-.pin.done{background:var(--jade);color:#fff}
+.pin.done{background:var(--jade-fill);color:#fff}
+/* 44 px hit area around every tappable pin, without changing how it looks. pinRings() clips it (--ring) halfway across the gap to any pin
+   closer than that, so a ring never covers another pin's face and two rings never overlap */
+.pin-wrap.leaflet-interactive{border-radius:50%}/* round, like the face: a neighbour's square corners don't take taps meant for this face */
+.pin-wrap.leaflet-interactive::after{content:"";position:absolute;inset:-7px;border-radius:50%;-webkit-clip-path:var(--ring,none);clip-path:var(--ring,none)}
 .pin.home{background:var(--gold);color:var(--gold-ink)}
 .pin.next{transform:scale(1.2);box-shadow:0 0 0 5px rgba(232,176,74,.45),0 2px 8px rgba(0,0,0,.4)}
 .me{position:relative;width:44px;height:44px}
@@ -803,16 +830,28 @@ path.trail{stroke:var(--me);stroke-opacity:.9;stroke-width:5;stroke-linecap:roun
 path.acc{fill:var(--me);fill-opacity:.12;stroke:var(--me);stroke-opacity:.4;stroke-width:1}
 .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
 .leaflet-popup-content-wrapper{border-radius:16px}
-.leaflet-popup-content{margin:13px 15px;font-size:14px;line-height:1.4}
-.leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
+.leaflet-popup-content{margin:10px 15px 8px;font-size:14px;line-height:1.4}/* the first line of the name sits level with the 44 px close button's × */
+.leaflet-container a.leaflet-popup-close-button{color:var(--muted);width:44px;height:44px;font:26px/44px var(--font)}
 .pop strong{font-size:15.5px}
-.pop p{margin:6px 0;color:var(--muted);font-size:13px}
-.pop .pop-d{font-weight:700;margin:6px 0 8px;font-variant-numeric:tabular-nums}
+/* three 44 px chips in one row inside a 250 px popup */
+.pop .acts{gap:6px}
+.pop .chip{padding:0 10px}
+.pop-tight .pop>p{display:none}
+.pop-tight .pop>.acts{margin-top:8px}
+.pop>strong{display:block;padding-right:28px;line-height:1.2}/* clear of the 44 px close button (the Chinese name sits below the × glyph, so it can use the full width) */
+.pop>.zh{display:block;line-height:1.2}
+.pop-nozh .pop>.zh{display:none}/* a squeezed popup keeps two lines of the blurb (hours, closures) before it keeps the Chinese name, which the Driver card shows */
+.pop p{margin:3px 0 4px;color:var(--muted);font-size:13px;line-height:1.35}
+.pop .pop-d{font-weight:700;margin:4px 0 5px;line-height:1.25;font-variant-numeric:tabular-nums}
 /* when Leaflet caps the popup height (short phones), only the blurb scrolls: name, distance and the chips stay visible */
 .leaflet-popup-content.leaflet-popup-scrolled{overflow:hidden}
 .leaflet-popup-scrolled .pop{height:100%;display:flex;flex-direction:column}
 .leaflet-popup-scrolled .pop>*{flex:none}
-.leaflet-popup-scrolled .pop>p{flex:0 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding-bottom:12px;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 14px),transparent)}
+.leaflet-popup-scrolled .pop>p{flex:0 1 auto;min-height:0;margin:3px 0 0;overflow:auto;overscroll-behavior:contain;padding-bottom:12px;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 10px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 10px),transparent)}
+/* the blurb is gone and it still doesn't fit (long names on tiny screens): the rest scrolls under the buttons, which stay in view */
+.leaflet-popup-content.pop-tight.leaflet-popup-scrolled{overflow-y:auto;overscroll-behavior:contain}
+.pop-tight.leaflet-popup-scrolled .pop{height:auto}
+.pop-tight.leaflet-popup-scrolled .pop>.acts{position:sticky;bottom:0;background:var(--panel);padding-top:6px;box-shadow:0 -6px 8px var(--panel)}/* text scrolling under the buttons fades out */
 
 /* driver card */
 .overlay{position:fixed;inset:0;z-index:2000;background:rgba(5,8,16,.75);display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 20px) 18px calc(env(safe-area-inset-bottom,0px) + 20px)}
@@ -823,17 +862,17 @@ path.acc{fill:var(--me);fill-opacity:.12;stroke:var(--me);stroke-opacity:.4;stro
 .dcard .tel{display:inline-block;margin-top:14px;font-size:19px;font-weight:700;color:#0a58ca;text-decoration:none}
 .dcard .row-btns{display:flex;gap:8px;margin-top:20px}
 .dcard .btn{flex:1;background:#f1ece0;border-color:#e2dac8;color:#141414}
-.dcard .btn.primary{background:#b27a14;color:#fff}
+.dcard .btn.primary{background:#b27a14;color:#1b1404}
 
 /* walking route */
-.dir{position:fixed;z-index:1100;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;max-height:60vh;max-height:60dvh;display:flex;flex-direction:column;background:var(--panel);border-radius:24px 24px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.25);padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 12px)}
+.dir{position:fixed;z-index:1100;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;max-height:60vh;max-height:60dvh;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;background:var(--panel);border-radius:24px 24px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.25);padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 12px)}
 .dir-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .dir-head h2{margin:0;font-size:18px;flex:1}
-.iconbtn{width:42px;height:42px;flex:none;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);display:grid;place-items:center;cursor:pointer;padding:0}
+.iconbtn{width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--ctl-line);background:var(--panel-2);display:grid;place-items:center;cursor:pointer;padding:0}
 .iconbtn svg{width:20px;height:20px}
-.ends{display:grid;grid-template-columns:1fr 42px;gap:8px;align-items:center}
+.ends{display:grid;grid-template-columns:1fr 44px;gap:8px;align-items:center}
 .fields{display:flex;flex-direction:column;gap:6px;min-width:0}
-.field{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);cursor:pointer;text-align:left}
+.field{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:0 12px;border-radius:12px;border:1px solid var(--ctl-line);background:var(--panel-2);cursor:pointer;text-align:left}
 .field i{width:12px;height:12px;border-radius:50%;flex:none;border:2px solid #fff;box-shadow:0 0 0 1px var(--line)}
 .field .a{background:var(--jade)} .field .b{background:var(--chili)}
 .field span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
@@ -844,13 +883,13 @@ path.acc{fill:var(--me);fill-opacity:.12;stroke:var(--me);stroke-opacity:.4;stro
 .summary span{color:var(--muted)}
 .summary .chip{margin-left:auto;flex:none}
 .summary>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nav-now{display:flex;align-items:center;gap:12px;margin:10px 0 2px;padding:11px 14px;border-radius:14px;background:var(--me);color:#fff;font-weight:650;line-height:1.3}
-.nav-now .in{font-size:22px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
-.nav-now.off{background:var(--bad)}
+.nav-now{display:flex;align-items:center;gap:12px;margin:10px 0 2px;padding:11px 14px;border-radius:14px;background:var(--me-fill);color:#fff;font-weight:650;font-size:17px;line-height:1.3}
+.nav-now .in{font-size:28px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.nav-now.off{background:var(--bad-fill)}
 .steps{flex:1 1 auto;min-height:120px;overflow:auto;margin:8px -16px 0;padding:0 16px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-.step{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:start;width:100%;padding:11px 0;border:0;border-top:1px solid var(--line);background:none;text-align:left;cursor:pointer;line-height:1.4}
+.step{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:start;width:100%;padding:11px 0;border:0;border-top:1px solid var(--line);background:none;text-align:left;cursor:pointer;font-size:16px;line-height:1.4}
 .step .ic{width:30px;height:30px;border-radius:9px;background:var(--panel-2);display:grid;place-items:center;font-size:16px;font-weight:700}
-.step.cur .ic{background:var(--me);color:#fff}
+.step.cur .ic{background:var(--me-fill);color:#fff}
 .step.cur{font-weight:650}
 .step .sd{color:var(--muted);font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums;padding-top:5px}
 .steps:empty{min-height:0}
@@ -859,22 +898,36 @@ path.acc{fill:var(--me);fill-opacity:.12;stroke:var(--me);stroke-opacity:.4;stro
 .steps .src{margin:10px 0 4px}
 .dir.from-me #fromBtn,.dir.from-me #swapBtn{display:none}
 .dir.from-me .ends{grid-template-columns:1fr}
+/* the current-step banner stops at 4 lines (the full text is the highlighted step below), so #steps keeps its 120 px.
+   Shorter phones (60dvh is 384-456 px) get tighter spacing and a 16 px banner of 3 lines at most. overflow-y on .dir is only a safety net */
+.nav-now>span+span{overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
+@media (max-height:760px){
+  .dir{padding-top:10px}
+  .dir-head{margin-bottom:6px}
+  .summary{margin-top:6px}
+  .nav-now{font-size:16px;padding:8px 12px;margin-top:6px}
+  .nav-now .in{font-size:24px}
+  .nav-now>span+span{-webkit-line-clamp:3}
+  .steps{margin-top:4px}
+}
 path.nav{stroke:var(--me);stroke-width:7;stroke-opacity:.95;stroke-linecap:round;stroke-linejoin:round;fill:none}
 path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:round;stroke-linejoin:round;fill:none}
+[data-theme=dark] path.nav-case{stroke:#0c1426;stroke-opacity:.9}/* a dark halo on the dimmed map, not a glaring white one */
+body.routing path.route{stroke-opacity:.35;stroke-width:3}/* the suggested-order line steps back while a walking route shows */
 .endpt{width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.45)}
 .endpt.a{background:var(--jade)} .endpt.b{background:var(--chili)}
 .picker{position:fixed;inset:0;z-index:1700;display:flex;flex-direction:column;background:var(--panel);padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 8px)}
 .picker-head{display:flex;align-items:center;gap:8px}
 .picker-head h2{margin:0;font-size:19px;flex:1}
-.search{width:100%;min-height:50px;margin:12px 0 4px;padding:0 14px;border-radius:13px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:16px}
+.search{width:100%;min-height:50px;margin:12px 0 4px;padding:0 14px;border-radius:13px;border:1px solid var(--ctl-line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:16px}
 .search::placeholder{color:var(--muted)}
 .opts{flex:1;overflow:auto;margin:0 -16px;padding:0 16px;overscroll-behavior:contain}
 .opts .opt{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:8px 2px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;line-height:1.3}
 .opts .opt:disabled{opacity:.5;cursor:default}
 .opts .opt small{display:block;color:var(--muted);font-size:12.5px;font-weight:500;margin-top:2px}
 .opt-group{margin:16px 2px 2px;font-size:13px;color:var(--muted);font-weight:650}
-.num.optn{background:var(--panel);color:var(--gold);box-shadow:inset 0 0 0 2px var(--gold)}
-.num.ic-me{background:var(--me)}
+.num.optn{background:var(--panel);color:var(--gold-text);box-shadow:inset 0 0 0 2px var(--gold)}
+.num.ic-me{background:var(--me-fill)}
 .num.ic-plain{background:var(--panel-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
 .pickbar{position:fixed;z-index:1200;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);margin:0 auto;max-width:520px;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:var(--panel);box-shadow:var(--shadow);font-weight:650}
 .pickbar span{flex:1}
@@ -885,10 +938,10 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
 </style>
 </head>
 <body class="night-map">
-<div id="map" role="application" aria-label="Map of the walk"></div>
+<div id="map" role="region" aria-label="Map of the walk"></div>
 
 <div class="topbar">
-  <div class="status" id="status" data-s="off" role="status" aria-live="polite"><i></i><span id="statusText">GPS off</span></div>
+  <div class="status" id="status" data-s="off"><i></i><span id="statusText">GPS off</span></div>
   <div class="fabs">
     <button class="fab" id="btnLocate" aria-label="Center the map on me" aria-pressed="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
@@ -907,13 +960,14 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
 
 <div class="banner" id="banner" hidden></div>
 <div class="toast" id="toast" hidden></div>
+<div id="sr" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-<div class="menu" id="menu" hidden>
-  <h2>Settings</h2>
+<div class="menu" id="menu" hidden role="region" aria-labelledby="menuTitle">
+  <h2 id="menuTitle">Settings</h2>
   <div class="opt-row"><span>Map labels</span>
-    <div class="seg" role="group" aria-label="Map labels"><button data-lab="en" aria-pressed="true">English</button><button data-lab="zh" aria-pressed="false">中文</button></div>
+    <div class="seg" role="group" aria-label="Map labels"><button data-lab="en" aria-pressed="true">English</button><button data-lab="zh" aria-pressed="false" lang="zh-CN">中文</button></div>
   </div>
-  <label class="opt-row"><span>Night map<small>Dims the street map for walking after dark.</small></span><input type="checkbox" id="optNight"></label>
+  <label class="opt-row"><span>Night mode<small>Dark screen and dimmed map for walking after dark.</small></span><input type="checkbox" id="optNight"></label>
   <label class="opt-row"><span>Keep screen on<small>Phones pause web GPS when the screen locks.</small></span><input type="checkbox" id="optWake"></label>
   <label class="opt-row"><span>China map offset fix<small>Chinese maps are shifted from raw GPS by about 600 m here. Turn this off only if your blue dot sits consistently off the streets.</small></span><input type="checkbox" id="optFix"></label>
   <div class="menu-acts">
@@ -934,7 +988,7 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
     </div>
     <div style="min-width:0">
       <div class="next-title"><span class="num" id="nextNum">1</span><h2 id="nextName">Tianxin Pavilion</h2></div>
-      <div class="zh" id="nextZh">天心阁</div>
+      <div class="zh" id="nextZh" lang="zh-CN">天心阁</div>
       <div class="meta"><b id="nextDist">–</b><span id="nextTime"></span><span id="nextDir"></span></div>
     </div>
     <div class="next-acts">
@@ -977,7 +1031,7 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
 </section>
 
 <div class="picker" id="picker" hidden role="dialog" aria-modal="true" aria-labelledby="pickTitle">
-  <div class="picker-head"><h2 id="pickTitle">Choose destination</h2><button class="iconbtn" id="pickClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="picker-head"><h2 id="pickTitle" tabindex="-1">Choose destination</h2><button class="iconbtn" id="pickClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <input class="search" id="pickSearch" type="search" placeholder="Search a place in Changsha" autocomplete="off" enterkeyhint="search" aria-label="Search a place">
   <div class="opts">
     <div id="pickResultsWrap" hidden><div class="opt-group">Search results</div><div id="pickResults"></div></div>
@@ -988,8 +1042,8 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
 
 <div class="overlay" id="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="cardBig">
   <div class="dcard">
-    <p class="ask">请带我去</p>
-    <div class="big" id="cardBig"></div>
+    <p class="ask" lang="zh-CN">请带我去</p>
+    <div class="big" id="cardBig" lang="zh-CN"></div>
     <p class="en" id="cardEn"></p>
     <a class="tel" id="cardTel" hidden></a>
     <div class="row-btns">
@@ -1091,7 +1145,7 @@ var saveT=null;function save(){clearTimeout(saveT);saveT=setTimeout(function(){t
 var watchId=null,sessionAt=null,me=null,meRaw=null,acc=null,gpsHeading=null,compassHeading=null,compassOn=false,follow=true,firstFix=true,curNext=null,prevNext=null,wakeLock=null;
 
 /* ---------- map ---------- */
-var map=L.map('map',{zoomControl:false,attributionControl:true});
+var map=L.map('map',{zoomControl:false,attributionControl:true,zoomAnimation:!RM,fadeAnimation:!RM,markerZoomAnimation:!RM,inertia:!RM});
 map.attributionControl.setPrefix('Leaflet');
 map.attributionControl.setPosition('topleft');
 function tileUrl(){return 'https://webrd0{s}.is.autonavi.com/appmaptile?lang='+(S.labels==='zh'?'zh_cn':'en')+'&size=1&scale=1&style=8&x={x}&y={y}&z={z}'}
@@ -1106,16 +1160,24 @@ var accCircle=null,meMarker=null;
 
 var sheet=$('#sheet');
 function sheetH(){return sheet.offsetHeight||260}
+/* centring on a point puts it in the middle of the map the user can see: below the top bar (56), above the sheet or route panel (spec WP3.2) */
+function bottomOcc(){return !dirEl().hidden?dirH():sheet.hidden?0:sheetH()}
+function centerAbove(ll,z){z=z==null?map.getZoom():z;return map.unproject(map.project(ll,z).add([0,Math.round((bottomOcc()-(56+SAT))/2)]),z)}
 var SAT=(function(){var d=document.createElement('div');d.style.cssText='position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden';document.body.appendChild(d);var h=d.offsetHeight;d.remove();return h})();
 var markers={};
+/* what a screen reader says for a pin (Leaflet names a marker from its content): "Stop 3: Name, done, next" */
+function pinLabel(s){
+  var kind=s===HOME||(s===HOTEL&&DAY==='today')?'Your hotel: ':s===HOTEL?'Start and finish: ':s.eat?'Place to eat: ':s.opt?'Detour: ':'Stop '+s.n+': ';
+  return kind+s.name+(S.visited[s.id]?', done':'')+(s.id===curNext?', next':'');
+}
 function pinIcon(s){
   var cls='pin'+(s.opt?' opt':'')+(isBase(s)?' home':'')+(S.visited[s.id]?' done':'')+(s.id===curNext?' next':'');
-  return L.divIcon({className:'pin-wrap',html:'<div class="'+cls+'">'+(S.visited[s.id]?'✓':s.n)+'</div>',iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-14]});
+  return L.divIcon({className:'pin-wrap',html:'<div class="'+cls+'" aria-hidden="true">'+(S.visited[s.id]?'✓':s.n)+'</div><span class="sr-only">'+esc(pinLabel(s))+'</span>',iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-14]});
 }
 function popupHtml(s){
   var d=me?'<div class="pop-d">'+fmtD(dist(me,s))+' away, about '+walkMin(dist(me,s))+' min</div>':'';
   var visit=isBase(s)?'':'<button class="chip" data-act="visit" data-id="'+s.id+'">'+(S.visited[s.id]?'Undo':'Done')+'</button>';
-  return '<div class="pop"><strong>'+s.name+'</strong><div class="zh">'+s.zh+'</div><p>'+s.blurb+'</p>'+d+
+  return '<div class="pop"><strong>'+s.name+'</strong><div class="zh" lang="zh-CN">'+s.zh+'</div><p>'+s.blurb+'</p>'+d+
     '<div class="acts"><button class="chip" data-act="route" data-id="'+s.id+'">Route</button><button class="chip" data-act="card" data-id="'+s.id+'">Driver card</button>'+visit+'</div></div>';
 }
 PINNED.forEach(function(s){
@@ -1129,14 +1191,69 @@ map.on('popupopen',function(e){
   openPop=e.popup;placeToast();/* a toast that is up moves to the top slot, out of the band this popup is panned into */
   var bottom=dirEl().hidden?(sheet.hidden?0:sheetH()):dirH(),top=Math.max(70+SAT,toastTop()+6),o=e.popup.options;
   o.autoPanPaddingTopLeft=L.point(10,top);
-  o.autoPanPaddingBottomRight=L.point(66,bottom+10);
+  /* the pin itself hangs 22 px below the popup's tip (25 for the next stop), so a popup with room to spare keeps 16 px more clear of the panel below */
+  o.autoPanPaddingBottomRight=L.point(66,bottom+10+16);
   /* on short phones a long blurb would push the chips under the sheet, so the popup scrolls instead
-     (48 = content margins 26 + wrapper border 2 + tip 20) */
-  o.maxHeight=Math.max(120,innerHeight-bottom-10-top-48);
-  e.popup.update();
+     (40 = content margins 18 + wrapper border 2 + tip 20). Where there is room the cap keeps the pin clear of the panel as well
+     (it hangs 22 px below the tip, 12 more than the 10 px gap, plus 2 for rounding); on short phones every line counts, and the
+     panel may cover the foot of the pin (12 px at most, so its number stays in view) */
+  var room=innerHeight-bottom-10-top-40;
+  o.maxHeight=Math.max(120,room>=220?room-14:room);
+  var el=e.popup.getElement(),c=el&&el.querySelector('.leaflet-popup-content');
+  if(!c)return;
+  /* Leaflet measures the content with whatever classes it has, so each fit starts from the unscrolled layout */
+  function fit(){c.classList.remove('leaflet-popup-scrolled');e.popup.update()}
+  c.classList.remove('pop-tight','pop-nozh');
+  o.minWidth=50;/* Leaflet's default */
+  fit();
+  /* when the cap squeezes the blurb, it shows whole lines: at least two plus an 8 px faded peek of the next.
+     The blurb (hours, closures, tickets) comes before the Chinese name, which the Driver card shows as well: where two lines
+     don't fit, the name gives way (pop-nozh), and only if that isn't enough does the blurb (pop-tight, which brings the name back).
+     On a tall screen the name also gives way when that is all it takes for the whole blurb to show.
+     The classes sit on the content node because update() re-renders the popup's HTML */
+  function squeezed(){var p=c.querySelector('.pop>p');return p&&c.classList.contains('leaflet-popup-scrolled')&&p.scrollHeight>p.clientHeight+1?p:null}
+  function lh(p){return parseFloat(getComputedStyle(p).lineHeight)||18}
+  function lines(p){return Math.floor((p.clientHeight-8)/lh(p))}
+  var p=squeezed();
+  if(!p)return;
+  o.minWidth=o.maxWidth;/* keep the width the blurb gave it, so the chips stay on one row */
+  var few=lines(p)<2;
+  if(few||room>=220){
+    c.classList.add('pop-nozh');fit();p=squeezed();
+    if(p&&!few){c.classList.remove('pop-nozh');fit();p=squeezed()}/* the blurb scrolls either way: keep the name */
+    else if(p&&lines(p)<2){c.classList.remove('pop-nozh');c.classList.add('pop-tight');p=null}
+  }
+  if(p)o.maxHeight-=Math.max(0,Math.floor(p.clientHeight-(lines(p)*lh(p)+8)));
+  fit();
 });
 map.on('popupclose',function(e){if(openPop===e.popup)openPop=null});
-function refreshPins(){PINNED.forEach(function(s){markers[s.id].setIcon(pinIcon(s))})}
+function refreshPins(){PINNED.forEach(function(s){markers[s.id].setIcon(pinIcon(s))});pinRings()}
+/* every tappable pin gets a 44 px hit ring (CSS ::after). Where another pin is closer than that, the ring is clipped to a polygon
+   whose edge sits halfway across the gap between the two faces (the next stop's face is 18 px, others 15), so a ring never covers
+   another pin's face and neighbouring rings never overlap: a tap goes to the pin whose face is nearest */
+function pinRings(){
+  if(!map._loaded)return;/* no view yet at boot: it runs after fitAll */
+  var R=22,pts=PINNED.map(function(s){return map.latLngToLayerPoint([s.lat,s.lng])}),face=PINNED.map(function(s){return s.id===curNext?18:15});
+  PINNED.forEach(function(s,i){
+    var cuts=[],clip='none',k,j;
+    for(j=0;j<pts.length;j++){
+      if(j===i)continue;
+      var dx=pts[j].x-pts[i].x,dy=pts[j].y-pts[i].y,d=Math.sqrt(dx*dx+dy*dy),t=(d+face[i]-face[j])/2;
+      if(d>0&&t<R)cuts.push([dx/d,dy/d,Math.max(0,t)]);
+    }
+    if(cuts.length){
+      var poly=[];
+      for(k=0;k<32;k++){
+        var a=k*Math.PI/16,ux=Math.cos(a),uy=Math.sin(a),r=R;
+        for(j=0;j<cuts.length;j++){var dot=ux*cuts[j][0]+uy*cuts[j][1];if(dot>1e-6)r=Math.min(r,cuts[j][2]/dot)}
+        poly.push((22+r*ux).toFixed(1)+'px '+(22+r*uy).toFixed(1)+'px');/* the ring box is 44x44, centred on the pin */
+      }
+      clip='polygon('+poly.join(',')+')';
+    }
+    var el=markers[s.id].getElement();if(el)el.style.setProperty('--ring',clip);
+  });
+}
+map.on('zoomend viewreset',pinRings);
 
 function drawTrail(){
   trailLayer.clearLayers();
@@ -1156,7 +1273,12 @@ function fitAll(){
 
 /* ---------- UI helpers ---------- */
 var banner=$('#banner'),toastEl=$('#toast'),toastT=null,toastRAF=0;
-function showBanner(msg,kind,id){banner.textContent=msg;banner.dataset.k=kind||'warn';banner.dataset.id=id||'';var b=document.createElement('button');b.textContent='Dismiss';b.onclick=hideBanner;banner.appendChild(b);banner.hidden=false}
+function showBanner(msg,kind,id){
+  banner.textContent='';banner.dataset.k=kind||'warn';banner.dataset.id=id||'';
+  var t=document.createElement('span');t.className='banner-t';t.textContent=msg;banner.appendChild(t);
+  var b=document.createElement('button');b.type='button';b.className='banner-x';b.textContent='×';b.setAttribute('aria-label','Dismiss');b.onclick=hideBanner;banner.appendChild(b);
+  banner.hidden=false;
+}
 function hideBanner(){banner.hidden=true;banner.dataset.id=''}
 function bottomH(){/* height of the bottom panel that is showing: the sheet, the route panel or the map-pick bar */
   if(!sheet.hidden)return sheetH();
@@ -1183,12 +1305,28 @@ function toastTop(){/* the bottom edge of a toast docked at the top, or 0: popup
 }
 function hideToast(){clearTimeout(toastT);toastEl.hidden=true}
 function toast(msg,actLabel,actFn){
-  toastEl.textContent=msg;toastEl.classList.remove('top');
+  toastEl.textContent=msg;toastEl.classList.remove('top');say(msg);
   if(actLabel&&actFn){var b=document.createElement('button');b.type='button';b.textContent=actLabel;b.addEventListener('click',function(){hideToast();actFn()});toastEl.appendChild(b)}
   toastEl.hidden=false;placeToast();clearTimeout(toastT);toastT=setTimeout(hideToast,actLabel&&actFn?6000:3200);
   if(!window.ResizeObserver&&!toastRAF)(function keep(){if(toastEl.hidden){toastRAF=0;return}placeToast();toastRAF=requestAnimationFrame(keep)})();/* older browsers: track the panels every frame while it shows */
 }
-function setStatus(s,text){var el=$('#status');el.dataset.s=s;$('#statusText').textContent=text}
+/* one polite live region for everything worth announcing: arrivals, toasts, turns, off-route and GPS tier changes */
+var sayQ=[],sayT=0;
+function say(t){
+  if(!t)return;var e=$('#sr');sayQ.push(t);if(sayT)return;
+  e.textContent='';/* clear first so the same words are announced again */
+  sayT=setTimeout(function(){e.textContent=sayQ.map(function(x){return x.replace(/[.…\s]+$/,'')}).join('. ');sayQ=[];sayT=0},60);/* several in one go (arrival + GPS) are read together, none lost */
+}
+/* the pill is rewritten only when its text changes and is announced only when the tier (good/fair/poor/…) changes;
+   a tier must hold for 1.5 s first, so a momentary "no signal" or accuracy hovering at 20 m isn't read out again and again */
+var tierSaid='off',tierT=0,stSpoken='';
+function setStatus(s,text,spoken){
+  var el=$('#status'),tx=$('#statusText');stSpoken=spoken||text;
+  if(tx.textContent!==text)tx.textContent=text;
+  if(el.dataset.s===s)return;
+  el.dataset.s=s;clearTimeout(tierT);
+  tierT=setTimeout(function(){if(el.dataset.s===s&&s!==tierSaid){tierSaid=s;say(stSpoken)}},1500);
+}
 
 function heading(){return compassHeading!=null?compassHeading:gpsHeading}
 function setFollow(v){follow=v;$('#btnLocate').setAttribute('aria-pressed',String(watchId!=null&&v))}
@@ -1220,12 +1358,12 @@ function ui(){
   if(me){
     var d=dist(me,next),b=bearing(me,next);
     $('#nextDist').textContent=d<40?'You’re here':fmtD(d);
-    $('#nextTime').textContent=d<40?'':'about '+walkMin(d)+' min';
+    $('#nextTime').textContent=d<40?'':walkMin(d)+' min';/* like the list rows; keeps "390 m  6 min" on one line at the larger type */
     $('#nextDir').textContent=d<40?'':'to the '+cardinal(b);
     $('#btnHotel').innerHTML='Hotel <small>'+fmtD(dist(me,HOME))+'</small>';
   }else{
     $('#nextDist').textContent='–';
-    $('#nextTime').textContent=watchId!=null?'Finding you…':'Start tracking to see distance';
+    $('#nextTime').textContent=watchId!=null?'Finding you…':'Track to see distance';
     $('#nextDir').textContent='';
     $('#btnHotel').textContent='Hotel';
   }
@@ -1233,7 +1371,7 @@ function ui(){
     var row=document.getElementById('row-'+s.id);if(!row)return;
     row.classList.toggle('done',!!S.visited[s.id]);
     row.querySelector('.num').textContent=S.visited[s.id]?'✓':s.n;
-    row.querySelector('[data-act="visit"]').textContent=S.visited[s.id]?'Undo':'Done';
+    row.querySelector('[data-act="visit"]').firstChild.nodeValue=S.visited[s.id]?'Undo':'Done';/* keeps the screen-reader suffix */
     var dEl=row.querySelector('.d');
     if(me){var dd=dist(me,s);dEl.innerHTML=fmtD(dd)+'<small>'+walkMin(dd)+' min</small>'}else dEl.textContent='–';
   });
@@ -1242,25 +1380,95 @@ function ui(){
   tb.textContent=watchId!=null?'Stop tracking':resume?'Resume':'Start tracking';
   if(resume)tb.setAttribute('aria-label','Resume tracking');else tb.removeAttribute('aria-label');
   tb.classList.toggle('on',watchId!=null);
-  $('#hint').textContent=watchId!=null?'Keep this page open while you walk. Phones pause web GPS when the screen locks.':'Tap Start tracking, then allow location access. Your track and visited stops are saved on this phone.';
+  $('#hint').textContent=watchId!=null?'Keep this page open while you walk. Phones pause web GPS when the screen locks.':'Tap Start tracking, then allow location. Your track and done stops stay on this phone.';
   $('#btnLocate').setAttribute('aria-pressed',String(watchId!=null&&follow));
   if(prevNext!==curNext){prevNext=curNext;refreshPins()}
   updateStats();updateArrow();
 }
 
+/* ---------- overlays: Android Back closes the top one; the card and picker are modal ---------- */
+/* Each open overlay (driver card, picker, settings, open list) owns one history entry, so Back closes it instead of leaving the app.
+   Overlays close at once however they are closed; a close that isn't a Back consumes its entry with history.go(-n) once it (and any
+   already-closed entries under it) is on top. History calls are queued so a push never races a pending go(), and a go() never
+   steps back past this page's own entries. */
+var LAYERS=[],HQ={busy:0,q:[],t:0};
+function hDepth(){var st=history.state;return st&&st.cnw?st.i||0:0}
+var H_BASE=hDepth();/* entries left from before a reload (tab discard) are not ours to pop */
+function hRun(){
+  while(!HQ.busy&&HQ.q.length){
+    var o=HQ.q.shift();
+    if(o.n){try{history.pushState({cnw:o.n,i:hDepth()+1},'')}catch(e){}continue}
+    var k=o.k;while(HQ.q.length&&HQ.q[0].k)k+=HQ.q.shift().k;
+    k=Math.min(k,hDepth()-H_BASE);if(k<=0)continue;
+    HQ.busy=1;HQ.t=setTimeout(hIdle,1500);
+    try{history.go(-k)}catch(e){hIdle()}
+  }
+}
+function hIdle(){clearTimeout(HQ.t);HQ.busy=0;hRun()}
+function openLayer(name,close){LAYERS.push({n:name,c:close});HQ.q.push({n:name});hRun()}
+function trimLayers(){var k=0;while(LAYERS.length&&LAYERS[LAYERS.length-1].dead){LAYERS.pop();k++}if(k){HQ.q.push({k:k});hRun()}}
+function dropLayer(name){/* `name` was closed by its button, Esc, a choice or the app itself */
+  for(var i=LAYERS.length-1;i>=0;i--)if(LAYERS[i].n===name&&!LAYERS[i].dead){LAYERS[i].dead=1;break}
+  trimLayers();
+}
+window.addEventListener('popstate',function(){
+  if(HQ.busy){hIdle();return}/* our own go() */
+  var d=hDepth()-H_BASE;
+  while(LAYERS.length>Math.max(0,d)){var l=LAYERS.pop();if(!l.dead)l.c(true)}
+  trimLayers();
+  if(d>LAYERS.length){HQ.q.push({k:d-LAYERS.length});hRun()}/* Forward onto an overlay that is gone */
+});
+/* run fn (a reload) once this page's overlay entries are off the history, so Back after it doesn't land on stale entries */
+function unwindLayers(fn){
+  var tries=0;
+  (function go(){
+    if(HQ.busy&&tries++<20){setTimeout(go,50);return}
+    HQ.q=[];LAYERS=[];var k=hDepth()-H_BASE;
+    if(k<=0){fn();return}
+    var ran=0,run=function(){if(!ran){ran=1;fn()}};
+    window.addEventListener('popstate',run);setTimeout(run,700);
+    HQ.busy=1;try{history.go(-k)}catch(e){run()}
+  })();
+}
+/* modal = driver card or picker: everything behind is inert, Tab stays inside, focus returns to where it was */
+var MODAL_BG='#map,.topbar,#sheet,#dir,#banner,#toast,#menu,#pickbar';
+function openModal(){var o=$('#overlay');if(!o.hidden)return o;var p=$('#picker');return p.hidden?null:p}
+function syncModal(){
+  var on=!!openModal();
+  document.querySelectorAll(MODAL_BG).forEach(function(e){if(on)e.setAttribute('inert','');else e.removeAttribute('inert')});
+}
+function canFocus(e){return !!(e&&e!==document.body&&e.isConnected&&e.getClientRects().length&&!e.closest('[inert],[hidden]'))}
+function restoreFocus(el,alts){
+  var c=[el].concat(alts||[]);
+  for(var i=0;i<c.length;i++){var e=typeof c[i]==='string'?$(c[i]):c[i];if(canFocus(e)){try{e.focus({preventScroll:true})}catch(x){}return}}
+}
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Tab')return;var m=openModal();if(!m)return;
+  var f=[].filter.call(m.querySelectorAll('a[href],button,input,[tabindex]'),function(x){return x.tabIndex>=0&&!x.disabled&&canFocus(x)});
+  if(!f.length)return;
+  var a=document.activeElement,i=f.indexOf(a);
+  if(i<0){if(!m.contains(a)||e.shiftKey){e.preventDefault();(e.shiftKey?f[f.length-1]:f[0]).focus()}return}/* e.g. the picker title */
+  if(e.shiftKey&&i===0){e.preventDefault();f[f.length-1].focus()}
+  else if(!e.shiftKey&&i===f.length-1){e.preventDefault();f[0].focus()}
+});
+
 /* ---------- list ---------- */
 function rowHtml(s){
-  return '<article class="row'+(s.opt?' opt':'')+'" id="row-'+s.id+'"><span class="num">'+s.n+'</span><div><h3>'+s.name+'</h3><div class="zh">'+s.zh+'</div><p>'+s.blurb+'</p>'+
-  '<div class="acts"><button class="chip" data-act="fly" data-id="'+s.id+'">Map</button><button class="chip" data-act="route" data-id="'+s.id+'">Route</button><button class="chip" data-act="card" data-id="'+s.id+'">Driver card</button><button class="chip" data-act="visit" data-id="'+s.id+'">Done</button></div></div><div class="d">–</div></article>';
+  /* the chips' visible words come first; the hidden suffix makes each of the 14 "Route"s etc. distinct for screen readers */
+  var sr=function(t){return '<span class="sr-only">'+t+'</span>'};
+  return '<article class="row'+(s.opt?' opt':'')+'" id="row-'+s.id+'"><span class="num">'+s.n+'</span><div><h4>'+s.name+'</h4><div class="zh" lang="zh-CN">'+s.zh+'</div><p>'+s.blurb+'</p>'+
+  '<div class="acts"><button class="chip" data-act="fly" data-id="'+s.id+'">Map'+sr(' of '+s.name)+'</button><button class="chip" data-act="route" data-id="'+s.id+'">Route'+sr(' to '+s.name)+'</button><button class="chip" data-act="card" data-id="'+s.id+'">Driver card'+sr(' for '+s.name)+'</button><button class="chip" data-act="visit" data-id="'+s.id+'">Done'+sr(': '+s.name)+'</button></div></div><div class="d">–</div></article>';
 }
-$('#list').innerHTML=STOPS.map(rowHtml).join('')+'<h4 class="group">Worth a detour</h4>'+EXTRAS.map(rowHtml).join('')+(EATS.length?'<h4 class="group">Places to eat</h4>'+EATS.map(rowHtml).join(''):'')+
+$('#list').innerHTML='<h3 class="sr-only">Stops in walking order</h3>'+STOPS.map(rowHtml).join('')+'<h3 class="group">Worth a detour</h3>'+EXTRAS.map(rowHtml).join('')+(EATS.length?'<h3 class="group">Places to eat</h3>'+EATS.map(rowHtml).join(''):'')+
   '<p class="note">The dotted gold line shows the suggested order, not the street route. Tap Route for walking directions from where you are. Long-press anywhere on the map to route from or to that spot. Stops tick themselves off when you get within about 45 m.</p>';
 
-function toggleList(force){
-  var list=$('#list'),open=force!=null?force:list.hidden;
+function toggleList(force,fromBack){
+  var list=$('#list'),was=!list.hidden,open=force!=null?force:list.hidden;
   list.hidden=!open;sheet.classList.toggle('list-open',open);if(open)hideBanner();
   $('#handle').setAttribute('aria-expanded',String(open));$('#handle').setAttribute('aria-label',open?'Hide stops':'Show all stops');$('#btnList').setAttribute('aria-expanded',String(open));
   $('#btnList').textContent=open?'Hide stops':'All stops';
+  if(open&&!was)openLayer('list',function(){toggleList(false,true)});
+  else if(was&&!open&&!fromBack)dropLayer('list');
 }
 
 /* ---------- actions ---------- */
@@ -1273,18 +1481,27 @@ function toggleVisit(id){
 }
 function flyTo(id){
   var s=BY[id];if(!s)return;setFollow(false);toggleList(false);
-  if(RM)map.setView([s.lat,s.lng],17);else map.flyTo([s.lat,s.lng],17,{duration:.6});
+  var c=centerAbove([s.lat,s.lng],17);
+  if(RM)map.setView(c,17);else map.flyTo(c,17,{duration:.6});
   setTimeout(function(){markers[id].openPopup()},RM?0:650);ui();
 }
-function showCard(id){
-  var s=BY[id];if(!s)return;
+var cardFocus=null,cardId=null;
+function showCard(id,opener){
+  var s=BY[id],ov=$('#overlay');if(!s)return;
+  if(ov.hidden){cardFocus=opener||document.activeElement;cardId=id}/* focus goes back here on close (a popup chip is gone by then: its pin instead) */
   map.closePopup();
   $('#cardBig').textContent=s.zh;$('#cardEn').textContent=s.name;
   var tel=$('#cardTel');if(s.tel){tel.hidden=false;tel.textContent='电话 '+s.tel;tel.href='tel:'+s.tel.replace(/\s/g,'')}else tel.hidden=true;
   $('#cardRoute').href=amap(s);
-  $('#overlay').hidden=false;$('#cardClose').focus();
+  if(ov.hidden){ov.hidden=false;syncModal();openLayer('card',closeCard)}
+  $('#cardClose').focus();
 }
-function closeCard(){$('#overlay').hidden=true}
+function closeCard(fromBack){
+  var ov=$('#overlay');if(ov.hidden)return;
+  ov.hidden=true;syncModal();
+  if(!fromBack)dropLayer('card');
+  var m=markers[cardId];restoreFocus(cardFocus,[m&&m.getElement(),'#btnHotel']);
+}
 
 document.addEventListener('click',function(e){
   if(!e.target.closest)return;
@@ -1296,13 +1513,12 @@ document.addEventListener('click',function(e){
   if(act==='dirfrom'||act==='dirto'){map.closePopup();var pin={type:'place',lat:+el.getAttribute('data-lat'),lng:+el.getAttribute('data-lng'),label:'Pinned spot'};if(act==='dirfrom')openRoute(null,pin);else openRoute(pin);return}
   if(act==='visit')toggleVisit(id);
   else if(act==='fly')flyTo(id);
-  else if(act==='card')showCard(id);
+  else if(act==='card')showCard(id,el);
   else if(act==='list')toggleList();
 },true);
 $('#handle').addEventListener('click',function(){toggleList()});
-$('#cardClose').addEventListener('click',closeCard);
+$('#cardClose').addEventListener('click',function(){closeCard()});
 $('#overlay').addEventListener('click',function(e){if(e.target===this)closeCard()});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeCard();closeMenu()}});
 
 /* ---------- GPS tracking ---------- */
 function startTracking(){
@@ -1357,11 +1573,11 @@ function onPos(p){
     meMarker=L.marker(ll,{icon:L.divIcon({className:'pin-wrap',html:'<div class="me"><div class="cone"></div><div class="dot"></div></div>',iconSize:[44,44],iconAnchor:[22,22]}),interactive:false,keyboard:false,zIndexOffset:1000}).addTo(map);
     accCircle=L.circle(ll,{radius:acc,className:'acc',interactive:false}).addTo(map);
   }else{meMarker.setLatLng(ll);accCircle.setLatLng(ll).setRadius(acc)}
-  var q=acc<=20?'good':acc<=50?'fair':'poor';
-  setStatus(q,'GPS ±'+Math.round(acc)+' m');
-  if(firstFix){firstFix=false;map.setView(ll,Math.max(map.getZoom(),17),{animate:!RM})}
-  else if(follow)map.panTo(ll,{animate:!RM});
-  ui();
+  var q=acc<=20?'good':acc<=50?'fair':'poor',ra=Math.max(5,Math.round(acc/5)*5);
+  setStatus(q,'GPS ±'+ra+' m',{good:'Good',fair:'Fair',poor:'Weak'}[q]+' GPS signal, accurate to about '+ra+' m');
+  ui();/* first, so the sheet has its tracking height before the map is framed around it */
+  if(firstFix){firstFix=false;var z=Math.max(map.getZoom(),17);map.setView(centerAbove(ll,z),z,{animate:!RM})}
+  else if(follow)map.panTo(centerAbove(ll),{animate:!RM});
   if(NAV.pending)computeRoute();else updateNav();
 }
 function onErr(e){
@@ -1377,7 +1593,7 @@ function onErr(e){
 $('#btnTrack').addEventListener('click',function(){watchId!=null?stopTracking():startTracking()});
 $('#btnLocate').addEventListener('click',function(){
   if(watchId==null){startTracking();return}
-  setFollow(true);if(me)map.setView([me.lat,me.lng],Math.max(map.getZoom(),17),{animate:!RM});ui();
+  setFollow(true);ui();if(me){var z=Math.max(map.getZoom(),17);map.setView(centerAbove([me.lat,me.lng],z),z,{animate:!RM})}
 });
 map.on('dragstart',function(){if(follow){setFollow(false);ui()}});
 
@@ -1430,15 +1646,31 @@ window.addEventListener('pagehide',function(){if(sessionAt){S.elapsed+=Date.now(
 
 /* ---------- settings ---------- */
 var menu=$('#menu');
-function closeMenu(){menu.hidden=true;$('#btnMenu').setAttribute('aria-expanded','false')}
-$('#btnMenu').addEventListener('click',function(){var open=menu.hidden;menu.hidden=!open;this.setAttribute('aria-expanded',String(open));
-  if(open)hideToast();/* the menu fills the top and middle of the screen: a toast left up would sit on its controls */});
+function openMenu(){
+  if(!menu.hidden)return;
+  menu.hidden=false;$('#btnMenu').setAttribute('aria-expanded','true');
+  hideToast();/* the menu fills the top and middle of the screen: a toast left up would sit on its controls */
+  openLayer('menu',closeMenu);
+}
+function closeMenu(fromBack){
+  if(menu.hidden)return;
+  var had=menu.contains(document.activeElement);
+  menu.hidden=true;$('#btnMenu').setAttribute('aria-expanded','false');
+  if(!fromBack)dropLayer('menu');
+  if(had)$('#btnMenu').focus();
+}
+$('#btnMenu').addEventListener('click',function(){if(menu.hidden)openMenu();else closeMenu()});
 
 function syncSettings(){
   document.querySelectorAll('[data-lab]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-lab')===S.labels))});
   $('#optNight').checked=S.night;$('#optWake').checked=S.wake;$('#optFix').checked=S.fix;
   document.body.classList.toggle('night-map',S.night);
+  /* Night mode also sets the dark theme, whatever the phone's own light/dark setting */
+  document.documentElement.dataset.theme=S.night?'dark':'';
+  var tc=document.querySelector('meta[name=theme-color]');
+  if(tc)tc.content=S.night?'#0c1426':(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'#0c1426':'#e9edf3');
 }
+if(window.matchMedia){var darkMQ=matchMedia('(prefers-color-scheme: dark)');if(darkMQ.addEventListener)darkMQ.addEventListener('change',syncSettings)}
 document.querySelectorAll('[data-lab]').forEach(function(b){b.addEventListener('click',function(){S.labels=b.getAttribute('data-lab');tiles.setUrl(tileUrl());syncSettings();save()})});
 $('#optNight').addEventListener('change',function(){S.night=this.checked;syncSettings();save()});
 $('#optWake').addEventListener('change',function(){S.wake=this.checked;setWake(S.wake&&watchId!=null);save()});
@@ -1475,7 +1707,7 @@ function fetchJSON(url,ms){
 }
 function decode6(str){var i=0,lat=0,lng=0,out=[];while(i<str.length){var b,sh=0,res=0;do{b=str.charCodeAt(i++)-63;res|=(b&31)<<sh;sh+=5}while(b>=32);lat+=(res&1)?~(res>>1):(res>>1);sh=0;res=0;do{b=str.charCodeAt(i++)-63;res|=(b&31)<<sh;sh+=5}while(b>=32);lng+=(res&1)?~(res>>1):(res>>1);out.push([lat/1e6,lng/1e6])}return out}
 
-var ICON={start:'●',end:'⚑',straight:'↑',right:'→',left:'←','slight right':'↗','slight left':'↖','sharp right':'↘','sharp left':'↙',uturn:'↶',round:'⟳'};
+var ICON={start:'●',end:'⚑',straight:'↑',right:'→',left:'←','slight right':'↗','slight left':'↖','sharp right':'↘','sharp left':'↙',uturn:'↶',round:'↻'};
 function vIcon(t){
   if(t>=1&&t<=3)return ICON.start;if(t>=4&&t<=6)return ICON.end;
   if([9,18,20,23,37].indexOf(t)>=0)return ICON['slight right'];if(t===10)return ICON.right;if(t===11)return ICON['sharp right'];
@@ -1535,6 +1767,7 @@ function amapRoute(f,t){
 }
 function showDir(open){
   dirEl().hidden=!open;sheet.hidden=open;$('#btnDir').setAttribute('aria-pressed',String(open));
+  document.body.classList.toggle('routing',open);
   if(open){closeMenu();toggleList(false);map.closePopup()}
   placeToast();
 }
@@ -1560,7 +1793,7 @@ function computeRoute(){
     if(id!==navReq)return;
     r.disp=r.coords.map(function(c){return w2g(c[0],c[1])});
     r.cum=[0];for(var i=1;i<r.disp.length;i++)r.cum.push(r.cum[i-1]+dist(ll(r.disp[i-1]),ll(r.disp[i])));
-    NAV.route=r;NAV.offCount=0;NAV.buzzed=-1;
+    NAV.route=r;NAV.offCount=0;NAV.buzzed=-1;NAV.saidArr=false;
     renderDir();drawRoute(true);
   }).catch(function(){
     if(id!==navReq)return;
@@ -1592,7 +1825,7 @@ function renderDir(){
   $('#sumDist').textContent=fmtD(r.dist);
   $('#sumTime').textContent='about '+Math.max(1,Math.round(r.time/60))+' min';
   var link=amapRoute(NAV.from,NAV.to),a=$('#sumAmap');a.hidden=!link;if(link)a.href=link;
-  $('#steps').innerHTML=r.steps.map(function(s,i){return '<button class="step" data-step="'+i+'"><span class="ic">'+s.icon+'</span><span>'+esc(s.text)+'</span><span class="sd">'+(s.dist>=1?fmtD(s.dist):'')+'</span></button>'}).join('');
+  $('#steps').innerHTML=r.steps.map(function(s,i){return '<button class="step" data-step="'+i+'"><span class="ic" aria-hidden="true">'+s.icon+'</span><span>'+esc(s.text)+'</span><span class="sd">'+(s.dist>=1?fmtD(s.dist):'')+'</span></button>'}).join('');
   var src=dirSrc;$('#steps').appendChild(src);src.hidden=false;src.textContent='Route from OpenStreetMap data via '+r.src+'. Some footpaths in Changsha may be missing; Amap has fuller coverage.';
   NAV.curStep=-2;updateNav();
 }
@@ -1609,9 +1842,11 @@ function updateNav(){
   for(var i=0;i<r.disp.length-1;i++){var sd=segDist(me,ll(r.disp[i]),ll(r.disp[i+1]));if(sd[0]<bd){bd=sd[0];best=i;bt=sd[1]}}
   var along=r.cum[best]+bt*(r.cum[best+1]-r.cum[best]),total=r.cum[r.cum.length-1];
   box.hidden=false;
-  if(total-along<20&&bd<40){box.className='nav-now';box.innerHTML='<span class="in">✓</span><span>You’ve arrived at '+esc(endLabel(NAV.to))+'</span>';markStep(r.steps.length-1);return}
+  if(total-along<20&&bd<40){box.className='nav-now';box.innerHTML='<span class="in">✓</span><span>You’ve arrived at '+esc(endLabel(NAV.to))+'</span>';markStep(r.steps.length-1);
+    if(!NAV.saidArr){NAV.saidArr=true;say('You’ve arrived at '+endLabel(NAV.to))}return}
   if(bd>Math.max(40,(acc||0)*1.2)){
     NAV.offCount++;box.className='nav-now off';box.innerHTML='<span class="in">'+fmtD(bd)+'</span><span>off the route. Finding a new one…</span>';
+    if(NAV.offCount===1)say(fmtD(bd)+' off the route. Finding a new one.');
     if(NAV.offCount>=2&&Date.now()-NAV.lastReroute>20000){NAV.lastReroute=Date.now();computeRoute()}
     return;
   }
@@ -1620,6 +1855,7 @@ function updateNav(){
   for(var k=1;k<r.steps.length;k++){if(r.cum[Math.min(r.steps[k].idx,r.cum.length-1)]>along+3){ni=k;break}}
   var s=r.steps[ni],dn=Math.max(0,r.cum[Math.min(s.idx,r.cum.length-1)]-along);
   box.className='nav-now';box.innerHTML='<span class="in">'+fmtD(dn)+'</span><span>'+esc(s.text)+'</span>';
+  if(NAV.curStep!==ni)say('In '+fmtD(dn)+': '+s.text);/* only when the step changes, never on distance ticks */
   if(dn<25&&NAV.buzzed!==ni){NAV.buzzed=ni;if(navigator.vibrate)navigator.vibrate(150)}
   markStep(ni);
 }
@@ -1635,16 +1871,26 @@ function openPicker(which){
   PICK.which=which;
   $('#pickTitle').textContent=which==='from'?'Choose start':'Choose destination';
   $('#pickSearch').value='';$('#pickResults').innerHTML='';$('#pickResultsWrap').hidden=true;
-  var h='<button class="opt" data-pick="me"'+(geoOK()?'':' disabled')+'><span class="num ic-me">◎</span><span>My location'+(geoOK()?'':'<small>Needs the page opened from an https link</small>')+'</span></button>'+
-    '<button class="opt" data-pick="map"><span class="num ic-plain">✥</span><span>Pick on the map<small>Tap any spot</small></span></button>'+
+  var h='<button class="opt" data-pick="me"'+(geoOK()?'':' disabled')+'><span class="num ic-me" aria-hidden="true">◎</span><span>My location'+(geoOK()?'':'<small>Needs the page opened from an https link</small>')+'</span></button>'+
+    '<button class="opt" data-pick="map"><span class="num ic-plain" aria-hidden="true">✥</span><span>Pick on the map<small>Tap any spot</small></span></button>'+
     '<div class="opt-group">Your stops</div>';
   (DAY!=='today'?[HOME]:[]).concat([HOTEL],STOPS,EXTRAS,EATS).forEach(function(s){
-    h+='<button class="opt" data-pick="place" data-id="'+s.id+'"><span class="num'+(isBase(s)?' home':'')+(s.opt?' optn':'')+'">'+s.n+'</span><span>'+(s===HOME?'Your hotel':s.name)+'<small>'+s.zh+'</small></span></button>';
+    h+='<button class="opt" data-pick="place" data-id="'+s.id+'"><span class="num'+(isBase(s)?' home':'')+(s.opt?' optn':'')+'">'+s.n+'</span><span>'+(s===HOME?'Your hotel':s.name)+'<small lang="zh-CN">'+s.zh+'</small></span></button>';
   });
   $('#pickOpts').innerHTML=h;
-  $('#picker').hidden=false;
+  var pk=$('#picker');
+  if(pk.hidden){pickFocus=document.activeElement;pk.hidden=false;syncModal();openLayer('picker',closePicker)}
+  $('#pickOpts').scrollTop=0;
+  $('#pickTitle').focus();/* the title, not the search box, so the keyboard doesn't cover the list */
 }
-function closePicker(){$('#picker').hidden=true;clearTimeout(searchT);searchId++}
+var pickFocus=null;
+function closePicker(fromBack){
+  var pk=$('#picker');clearTimeout(searchT);searchId++;
+  if(pk.hidden)return;
+  pk.hidden=true;syncModal();
+  if(!fromBack)dropLayer('picker');
+  restoreFocus(pickFocus,['#toBtn','#btnDir']);
+}
 function choose(end){
   if(PICK.which==='from')NAV.from=end;else NAV.to=end;
   closePicker();showDir(true);
@@ -1663,7 +1909,7 @@ function doSearch(q){
   fetchJSON('https://photon.komoot.io/api/?q='+encodeURIComponent(q)+'&lat=28.19&lon=112.98&limit=8&lang=en&bbox=112.75,27.95,113.25,28.45',10000).then(function(j){
     if(id!==searchId)return;
     PICK.results=(j.features||[]).map(function(f){var p=f.properties||{},c=f.geometry.coordinates,g=w2g(c[1],c[0]);return{lat:g[0],lng:g[1],label:p.name||p.street||q,sub:[p.street&&p.name?p.street:'',p.district,p.city].filter(Boolean).join(', ')}});
-    $('#pickResults').innerHTML=PICK.results.length?PICK.results.map(function(r,i){return '<button class="opt" data-pick="res" data-i="'+i+'"><span class="num ic-plain">⌖</span><span>'+esc(r.label)+(r.sub?'<small>'+esc(r.sub)+'</small>':'')+'</span></button>'}).join(''):'<p class="dir-msg">No matches nearby. Try the Chinese name, or pick the spot on the map.</p>';
+    $('#pickResults').innerHTML=PICK.results.length?PICK.results.map(function(r,i){return '<button class="opt" data-pick="res" data-i="'+i+'"><span class="num ic-plain" aria-hidden="true">⊙</span><span>'+esc(r.label)+(r.sub?'<small>'+esc(r.sub)+'</small>':'')+'</span></button>'}).join(''):'<p class="dir-msg">No matches nearby. Try the Chinese name, or pick the spot on the map.</p>';
   }).catch(function(){if(id!==searchId)return;$('#pickResults').innerHTML='<p class="dir-msg">Search isn’t responding. Pick the spot on the map instead.</p>'});
 }
 $('#pickSearch').addEventListener('input',function(){
@@ -1671,11 +1917,11 @@ $('#pickSearch').addEventListener('input',function(){
   if(q.length<2){searchId++;$('#pickResultsWrap').hidden=true;return}
   searchT=setTimeout(function(){doSearch(q)},350);
 });
-$('#pickClose').addEventListener('click',closePicker);
+$('#pickClose').addEventListener('click',function(){closePicker()});
 
 /* pick on map + long-press */
 var mapPick=null;
-function startMapPick(which){mapPick=which;dirEl().hidden=true;sheet.hidden=true;$('#pickText').textContent=which==='from'?'Tap the map to set the start':'Tap the map to set the destination';$('#pickbar').hidden=false}
+function startMapPick(which){mapPick=which;dirEl().hidden=true;sheet.hidden=true;$('#pickText').textContent=which==='from'?'Tap the map to set the start':'Tap the map to set the destination';$('#pickbar').hidden=false;$('#pickCancel').focus({preventScroll:true})}
 function endMapPick(){mapPick=null;$('#pickbar').hidden=true;showDir(true)}
 $('#pickCancel').addEventListener('click',function(){endMapPick();renderDir()});
 map.on('click',function(e){
@@ -1696,7 +1942,14 @@ $('#fromBtn').addEventListener('click',function(){openPicker('from')});
 $('#toBtn').addEventListener('click',function(){openPicker('to')});
 $('#swapBtn').addEventListener('click',function(){var t=NAV.from;NAV.from=NAV.to;NAV.to=t;NAV.route=null;computeRoute()});
 $('#dirSteps').addEventListener('click',function(){var c=dirEl().classList.toggle('compact');this.textContent=c?'Show steps':'Hide steps';this.setAttribute('aria-expanded',String(!c));if(NAV.route&&NAV.from&&NAV.from.type!=='me')drawRoute(true)});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){if(!$('#picker').hidden)closePicker();else if(mapPick){endMapPick();renderDir()}}});
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape')return;
+  if(!$('#overlay').hidden)closeCard();
+  else if(!$('#picker').hidden)closePicker();
+  else if(mapPick){endMapPick();renderDir()}
+  else if(!menu.hidden)closeMenu();
+  else if(!$('#list').hidden)toggleList(false);
+});
 
 /* ---------- day switch ---------- */
 function syncDay(){document.querySelectorAll('[data-day]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-day')===DAY))})}
@@ -1712,11 +1965,11 @@ document.querySelectorAll('[data-day]').forEach(function(b){b.addEventListener('
     localStorage.setItem(DAY_KEY,d);
     sessionStorage.setItem('changsha-walk-switched',wasTracking?'track':'1');
   }catch(e){toast('This browser can’t save the choice');return}
-  location.reload();
+  unwindLayers(function(){location.reload()});
 })});
 
 /* ---------- boot ---------- */
-syncSettings();syncDay();drawTrail();ui();fitAll();
+syncSettings();syncDay();drawTrail();ui();fitAll();pinRings();
 var switched=null;try{switched=sessionStorage.getItem('changsha-walk-switched');sessionStorage.removeItem('changsha-walk-switched')}catch(e){}
 if(switched){toast('Showing the '+DAYS[DAY].label+' walk');if(switched==='track'&&geoOK())startTracking()}
 else if(S.trail.some(function(g){return g.length}))toast('Your earlier walk is restored');
