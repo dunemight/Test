@@ -882,16 +882,65 @@ path.acc{fill:var(--me);fill-opacity:.12;stroke:var(--me);stroke-opacity:.4;stro
 .pop-t .pop .pills{margin:4px 0 0}
 .pop-t .pop .pop-d{margin:4px 0 6px}
 
-/* driver card */
+/* show-staff card (showSay): taxi card, phrases, "Where am I". It stays cream in both themes: it is shown to other people. */
 .overlay{position:fixed;inset:0;z-index:2000;background:rgba(5,8,16,.75);display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 20px) 18px calc(env(safe-area-inset-bottom,0px) + 20px)}
-.dcard{background:#fffdf7;color:#141414;border-radius:22px;padding:26px 22px 20px;width:min(100%,460px);text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.dcard{background:#fffdf7;color:#141414;border-radius:22px;padding:24px 20px 18px;width:min(100%,460px);text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.5);
+  max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 40px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 40px);overflow:auto;overscroll-behavior:contain;transition:transform .3s ease}
+.dcard.flip{transform:rotate(180deg)}/* Flip: the text faces the person across the table */
 .dcard .ask{font-family:var(--font-zh);font-size:20px;color:#6b5a3a;margin:0}
-.dcard .big{font-family:var(--font-zh);font-size:clamp(30px,9.5vw,46px);font-weight:800;line-height:1.22;margin:12px 0 10px;word-break:break-all}
+.dcard .big{font-family:var(--font-zh);font-size:clamp(28px,9.5vw,56px);font-weight:800;line-height:1.22;margin:10px 0 8px;word-break:break-all;text-wrap:balance}
+.dcard .big.s{font-size:clamp(40px,15vw,56px)}/* up to 6 characters (买单, 微辣): as large as fits */
+.dcard .big.l{font-size:clamp(24px,7.5vw,40px)}/* over 16 characters */
+.dcard .py{font-size:17px;color:#6b5a3a;margin:0 0 6px}
 .dcard .en{color:#555;font-size:15px;margin:0}
-.dcard .tel{display:inline-block;margin-top:14px;font-size:19px;font-weight:700;color:#0a58ca;text-decoration:none}
-.dcard .row-btns{display:flex;gap:8px;margin-top:20px}
-.dcard .btn{flex:1;background:#f1ece0;border-color:#e2dac8;color:#141414}
+.dcard .addr{font-family:var(--font-zh);font-size:20px;font-weight:700;line-height:1.35;margin:10px 0 0;color:#141414;word-break:break-all;text-wrap:balance}
+.dcard .tel{display:inline-block;margin-top:12px;font-size:19px;font-weight:700;color:#0a58ca;text-decoration:none}
+.dcard .ans{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
+.dcard .an{flex:1 1 0;max-width:140px;min-width:0;min-height:54px;padding:6px 8px;border-radius:12px;border:1px solid #e2dac8;background:#f1ece0;color:#141414;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font:inherit}
+.dcard .an span{font-family:var(--font-zh);font-size:22px;font-weight:700;line-height:1.2}
+.dcard .an small{font-size:12.5px;color:#555}
+.dcard .an[aria-pressed="true"]{background:#b27a14;border-color:transparent;color:#1b1404}
+.dcard .an[aria-pressed="true"] small{color:#1b1404}
+.dcard .cnote{font-size:14px;color:#555;margin:12px 0 0;line-height:1.45;font-variant-numeric:tabular-nums}
+.dcard .cmsg{font-size:14px;font-weight:700;color:#1b6b47;margin:10px 0 0}
+.dcard .cmsg:empty{display:none}
+.dcard .row-btns{display:flex;gap:8px;margin-top:18px}
+.dcard .row-btns.r2{margin-top:8px}
+.dcard .btn{flex:1;background:#f1ece0;border-color:#e2dac8;color:#141414;padding:0 10px}
 .dcard .btn.primary{background:#b27a14;color:#fff}
+.dcard .btn[aria-pressed="true"]{background:#e2dac8}
+
+/* Help (WP7.3): full screen like the picker, three tabs */
+.fab-zh{font-family:var(--font-zh);font-size:21px;font-weight:700;line-height:1}
+.help-tabs{display:flex;flex:none;margin:12px 0 4px}
+.help-tabs button{flex:1 1 0;min-height:44px;font-size:14.5px;color:var(--ink)}
+.seg button[aria-selected="true"]{background:var(--gold);color:var(--gold-ink)}
+.help-body{padding-bottom:18px}
+.help-body h3.opt-group{margin:18px 2px 4px}
+.opts .opt.ph{min-height:60px}
+.opt.ph .pz{display:block;font-family:var(--font-zh);font-size:19px;font-weight:700;line-height:1.3}
+.opt.ph .chev{flex:none;color:var(--muted);font-size:20px}
+.hnote{font-size:13.5px;color:var(--muted);line-height:1.45;margin:12px 2px 8px}
+.hmsg{font-size:14px;font-weight:650;margin:8px 2px 0;line-height:1.4}
+.hmsg:empty{display:none}
+.kw-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip.kw{min-height:48px;justify-content:space-between;gap:8px;font-size:14px;padding:0 12px}
+.chip.kw .zh{font-size:14px;flex:none}
+.chip.kw.wide{display:flex;margin-top:8px}
+.sos-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.btn.sos{flex-direction:column;min-height:66px;padding:6px 8px;background:var(--bad-fill,#c42f2f);color:#fff;border-color:transparent;white-space:normal;line-height:1.2;text-align:center}
+.btn.sos b{font-size:23px;font-variant-numeric:tabular-nums}
+.btn.sos small{font-size:13px;font-weight:600}
+.sos-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn.big-act{flex-direction:column;align-items:flex-start;justify-content:center;min-height:62px;padding:8px 12px;white-space:normal;text-align:left;line-height:1.25}
+.btn.big-act small{font-size:12.5px;font-weight:500;color:var(--muted);margin-top:2px}
+.btn.big-act:disabled{opacity:.55;cursor:default}
+.hplace{display:grid;grid-template-columns:30px minmax(0,1fr) auto;column-gap:10px;row-gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.hplace .ot{min-width:0;font-weight:600;line-height:1.3}
+.hplace .ot small{display:block;color:var(--muted);font-size:12.5px;font-weight:500;margin-top:2px}
+.hplace .od{font-weight:700;font-size:13.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.hplace .acts{grid-column:2/4}
+.help-body .chip{min-height:44px}/* touch targets in Help (WP2 raises every chip to 44 px anyway) */
 
 /* walking route */
 .dir{position:fixed;z-index:1100;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;max-height:60vh;max-height:60dvh;display:flex;flex-direction:column;background:var(--panel);border-radius:24px 24px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.25);padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 12px)}
@@ -967,7 +1016,9 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
     <button class="fab" id="btnDir" aria-label="Walking route" aria-pressed="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M8.2 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.8"/></svg>
     </button>
-    <button class="fab" id="btnCompass" aria-label="Use the phone compass" aria-pressed="false">
+    <button class="fab" id="btnHelp" aria-label="Phrases and help" aria-haspopup="dialog" aria-expanded="false" aria-controls="help"><span class="fab-zh" aria-hidden="true" lang="zh-CN">文</span></button>
+    <!-- WP7: Help takes the compass slot. WP3 moves the compass toggle onto the dial (#compass); #btnCompass stays in the DOM, hidden, until the merge deletes it -->
+    <button class="fab" id="btnCompass" aria-label="Use the phone compass" aria-pressed="false" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M15.5 8.5 13.4 13.4 8.5 15.5 10.6 10.6Z" fill="currentColor"/></svg>
     </button>
     <button class="fab" id="btnMenu" aria-label="Settings" aria-expanded="false" aria-controls="menu">
@@ -1060,17 +1111,37 @@ path.nav-case{stroke:#fff;stroke-width:11;stroke-opacity:.85;stroke-linecap:roun
 </div>
 <div class="pickbar" id="pickbar" hidden><span id="pickText">Tap the map to set the destination</span><button class="btn small" id="pickCancel">Cancel</button></div>
 
+<!-- the show-staff card (showSay): taxi card, phrases, "Where am I" -->
 <div class="overlay" id="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="cardBig">
-  <div class="dcard">
-    <p class="ask">请带我去</p>
-    <div class="big" id="cardBig"></div>
+  <div class="dcard" id="dcard">
+    <p class="ask" id="cardAsk" lang="zh-CN">请带我去</p>
+    <div class="big" id="cardBig" lang="zh-CN"></div>
+    <p class="py" id="cardPy" lang="zh-Latn-pinyin" hidden></p>
     <p class="en" id="cardEn"></p>
+    <p class="addr" id="cardAddr" lang="zh-CN" hidden></p>
     <a class="tel" id="cardTel" hidden></a>
-    <div class="row-btns">
-      <a class="btn primary" id="cardRoute" target="_blank" rel="noopener">Open in Amap</a>
-      <button class="btn" id="cardClose">Close</button>
+    <div class="ans" id="cardAns" role="group" aria-label="Replies to tap" hidden></div>
+    <p class="cnote" id="cardNote" hidden></p>
+    <p class="cmsg" id="cardMsg" role="status"></p>
+    <div class="row-btns" id="cardActs">
+      <a class="btn primary" id="cardRoute" target="_blank" rel="noopener">Taxi in Amap</a>
+      <button class="btn" id="cardWalk" type="button" hidden>Walk there</button>
+    </div>
+    <div class="row-btns r2">
+      <button class="btn" id="cardCopy" type="button">Copy</button>
+      <button class="btn" id="cardFlip" type="button" aria-pressed="false" aria-label="Flip the card to face the other person">Flip</button>
+      <button class="btn" id="cardClose" type="button">Close</button>
     </div>
   </div>
+</div>
+
+<!-- Help (WP7.3): phrases, Nearby (Amap searches), SOS -->
+<div class="picker help" id="help" hidden role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="picker-head"><h2 id="helpTitle" tabindex="-1">Phrases and help</h2><button class="iconbtn" id="helpClose" aria-label="Close help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="seg help-tabs" role="tablist" aria-label="Help sections">
+    <button role="tab" id="htab-phrases" data-h="tab" data-tab="phrases" aria-controls="helpBody" aria-selected="true">Phrases</button><button role="tab" id="htab-nearby" data-h="tab" data-tab="nearby" aria-controls="helpBody" aria-selected="false" tabindex="-1">Nearby</button><button role="tab" id="htab-sos" data-h="tab" data-tab="sos" aria-controls="helpBody" aria-selected="false" tabindex="-1">SOS</button>
+  </div>
+  <div class="opts help-body" id="helpBody" role="tabpanel" aria-labelledby="htab-phrases"></div>
 </div>
 
 <script>/* @preserve
@@ -1114,7 +1185,7 @@ var PLACES=[
   back:'Back to the hotel',blurb:'Your hotel, the start and end of the loop.'},
  {id:'hx-base',cat:'sight',glyph:'★',name:'Huangxing Road Pedestrian Street',short:'Base',zh:'黄兴南路步行街',lat:28.186413,lng:112.976319,
   hoursText:'Street open all night; most shops about 10:00–22:00',price:{lvl:0,text:'Free'},late:true,back:'Back to Huangxing Rd',
-  taxi:{zh:'黄兴广场（黄兴路步行街）',lat:28.189001,lng:112.976361},conf:'high',checked:'2026-09',
+  taxi:{zh:'黄兴广场（黄兴路步行街）',en:'Huangxing Square, on the pedestrian street',lat:28.189001,lng:112.976361},conf:'high',checked:'2026-09',
   blurb:'Your base: Changsha’s main neon pedestrian street, about 840 m long. The Huang Xing statue marks the north end at Simenkou, across Jiefang W Rd from IFS; Nanmenkou is the south end. The pin is in the southern third. The street is free and busy until late; most shops close around 22:00.'},
 
  /* ---- walk stops and detours ---- */
@@ -1319,6 +1390,30 @@ var PLACES=[
   blurb:'Gritty, locally loved night-snack cluster where Yunan St meets Dongguashan Lane 1. Try fried pork sausage (东瓜山肉肠, ~¥3), 丹丹热卤 braised snacks, 紫苏桃子姜 and 盟重烧烤 barbecue (17:30–01:00, queues). Stalls open about 16:00–17:00 and close around 01:00–02:30; busiest from 20:00. About ¥40–80 per person.'}
  /* ↑ paste researched places above this line (add a comma after the previous entry) */
 ];
+
+/* ---------- phrases to show staff, drivers and passers-by (Help → Phrases and SOS; spec §3.7) ----------
+   g = group (PGROUPS); py = pinyin; ans = replies the other person can tap on the card. The wording comes from the audits
+   (U-P9, T-P1, T-P4, T-P8); every phrase, and the pinyin, needs a native speaker's check before shipping. */
+var PHRASES=[
+ {g:'eat',zh:'不要辣',py:'bú yào là',en:'No chili, please',ans:[['不辣','Not spicy'],['有点辣','A bit spicy'],['很辣','Very spicy']]},
+ {g:'eat',zh:'微辣',py:'wēi là',en:'Just a little spicy'},
+ {g:'eat',zh:'不要香菜',py:'bú yào xiāngcài',en:'No coriander'},
+ {g:'eat',zh:'我吃素',py:'wǒ chī sù',en:'I’m vegetarian'},
+ {g:'eat',zh:'我对花生过敏',py:'wǒ duì huāshēng guòmǐn',en:'I’m allergic to peanuts'},
+ {g:'eat',zh:'买单',py:'mǎi dān',en:'The bill, please'},
+ {g:'eat',zh:'打包',py:'dǎ bāo',en:'To take away'},
+ {g:'eat',zh:'我没有微信，可以帮我取号吗？',py:'wǒ méiyǒu Wēixìn, kěyǐ bāng wǒ qǔ hào ma',en:'I don’t have WeChat. Can you take a queue number for me?'},
+ {g:'pay',zh:'可以用支付宝吗？',py:'kěyǐ yòng Zhīfùbǎo ma',en:'Can I pay with Alipay?'},
+ {g:'pay',zh:'请扫我的付款码',py:'qǐng sǎo wǒ de fùkuǎnmǎ',en:'Please scan my payment code'},
+ {g:'go',zh:'洗手间在哪里？',py:'xǐshǒujiān zài nǎlǐ',en:'Where is the toilet?'},
+ {g:'go',zh:'地铁站在哪里？',py:'dìtiězhàn zài nǎlǐ',en:'Where is the metro station?'},
+ {g:'go',zh:'请打表',py:'qǐng dǎ biǎo',en:'Please use the meter'},
+ {g:'go',zh:'请在这里停车',py:'qǐng zài zhèlǐ tíngchē',en:'Please stop here'},
+ {g:'sos',zh:'请帮我叫救护车',py:'qǐng bāng wǒ jiào jiùhùchē',en:'Please call an ambulance'},
+ {g:'sos',zh:'请帮我报警',py:'qǐng bāng wǒ bàojǐng',en:'Please call the police'},
+ {g:'sos',zh:'我迷路了，请帮帮我',py:'wǒ mílù le, qǐng bāngbang wǒ',en:'I’m lost, please help me'}
+];
+var PGROUPS={eat:'Eating out',pay:'Paying',go:'Getting around',sos:'Emergency'};
 
 /* ---------- walks: id skeletons (order in stops = loop order; numbers are derived from it) ----------
    A place listed in any walk is owned by it and never shows in another walk's "More nearby". */
@@ -1526,7 +1621,9 @@ function cardinal(b){return DIRS[Math.round(b/45)%8]}
 function fmtD(m){var r=Math.round(m/10)*10;return r<1000?r+' m':(m/1000).toFixed(1)+' km'}
 function walkMin(m){return Math.max(1,Math.round(m*1.25/78))}
 function fmtT(ms){var s=Math.floor(ms/1000),h=Math.floor(s/3600),mi=Math.floor(s%3600/60),se=s%60;return h?h+':'+String(mi).padStart(2,'0')+':'+String(se).padStart(2,'0'):mi+':'+String(se).padStart(2,'0')}
-function amap(s){return 'https://uri.amap.com/navigation?to='+s.lng+','+s.lat+','+encodeURIComponent(s.zh)+'&mode=walk&coordinate=gaode&callnative=1&src=changsha-night-walk'}
+/* Amap navigation to a place; mode 'walk' (default) or 'car' (taxi card: a car-free place's drop-off point, s.taxi, when it has one) */
+function amap(s,mode){mode=mode||'walk';var t=mode==='car'&&s.taxi?s.taxi:s;
+  return 'https://uri.amap.com/navigation?to='+t.lng+','+t.lat+','+encodeURIComponent(t.zh||s.zh)+'&mode='+mode+'&coordinate=gaode&callnative=1&src=changsha-night-walk'}
 
 /* ---------- the walk on screen: view objects built from the registry ----------
    STOPS get their loop number, EXTRAS "+", EATS their category glyph; eat:true is the view flag that stops auto-tick.
@@ -1888,6 +1985,7 @@ function ui(){
   $('#btnLocate').setAttribute('aria-pressed',String(watchId!=null&&follow));
   if(prevNext!==curNext){prevNext=curNext;refreshPins()}
   updateStats();updateArrow();
+  if(!$('#help').hidden)helpLive();/* WP7: Nearby searches and SOS follow your position */
 }
 
 /* ---------- the tonight line: warn before you walk to something closed ----------
@@ -2104,15 +2202,214 @@ function flyTo(id){
   /* a "More nearby" place whose pin the current filter leaves off the map: show the same popup on its own */
   setTimeout(function(){if(pinShown(id))markers[id].openPopup();else L.popup(popOpts()).setLatLng([s.lat,s.lng]).setContent(popupHtml(s)).openOn(map)},RM?0:650);ui();
 }
-function showCard(id){
-  var s=BY[id];if(!s)return;
-  map.closePopup();
-  $('#cardBig').textContent=s.zh;$('#cardEn').textContent=s.name;
-  var tel=$('#cardTel');if(s.tel){tel.hidden=false;tel.textContent='电话 '+s.tel;tel.href='tel:'+s.tel.replace(/\s/g,'')}else tel.hidden=true;
-  $('#cardRoute').href=amap(s);
-  $('#overlay').hidden=false;$('#cardClose').focus();
+/* ---------- the show-staff card (WP7.1): big Chinese for a driver, a waiter or a passer-by ----------
+   showSay({ask, zh, py, en, addr, tel, answers:[[zh,en]], noteHtml, primary:{label,href}, walk:fn, copy, copyMsg}, opener, alts).
+   Copy puts `copy` (default ask+zh) on the clipboard; Flip turns the card 180° to face the other person. Feedback is shown in the
+   card, because a toast would sit under it. Focus goes back to the opener (or the first of `alts` still on screen) on close. */
+var sayFocus=null,sayAlts=null,sayWalk=null,sayCopy='',sayCopyMsg='';
+function focusBack(el,alts){
+  var c=[el].concat(alts||[]);
+  for(var i=0;i<c.length;i++){var e=typeof c[i]==='string'?$(c[i]):c[i];
+    if(e&&e!==document.body&&e.isConnected&&e.getClientRects().length&&!e.closest('[hidden]')){try{e.focus({preventScroll:true})}catch(x){}return}}
 }
-function closeCard(){$('#overlay').hidden=true}
+function showSay(o,opener,alts){
+  var ov=$('#overlay'),fresh=ov.hidden;
+  if(fresh){sayFocus=opener||document.activeElement;sayAlts=alts||null}
+  map.closePopup();
+  function set(sel,v){var e=$(sel);e.textContent=v||'';e.hidden=!v;return e}
+  set('#cardAsk',o.ask);
+  var big=$('#cardBig'),n=Array.from(o.zh||'').length;big.textContent=o.zh||'';big.className='big'+(n<=6?' s':n>16?' l':'');
+  set('#cardPy',o.py);set('#cardEn',o.en);set('#cardAddr',o.addr);
+  var tel=$('#cardTel');if(o.tel){tel.hidden=false;tel.textContent='电话 '+o.tel;tel.href='tel:'+o.tel.replace(/[^\d+]/g,'')}else tel.hidden=true;
+  var ans=$('#cardAns'),as=o.answers||[];
+  ans.innerHTML=as.map(function(a){return '<button type="button" class="an" aria-pressed="false"><span lang="zh-CN">'+esc(a[0])+'</span><small>'+esc(a[1])+'</small></button>'}).join('');ans.hidden=!as.length;
+  var nt=$('#cardNote');nt.innerHTML=o.noteHtml||'';nt.hidden=!o.noteHtml;
+  $('#cardMsg').textContent='';
+  var pr=$('#cardRoute'),hasP=!!(o.primary&&o.primary.href);pr.hidden=!hasP;if(hasP){pr.textContent=o.primary.label;pr.href=o.primary.href}
+  sayWalk=o.walk||null;$('#cardWalk').hidden=!sayWalk;$('#cardActs').hidden=!hasP&&!sayWalk;
+  sayCopy=o.copy||((o.ask||'')+(o.zh||''));sayCopyMsg=o.copyMsg||'Copied';$('#cardCopy').textContent='Copy';
+  $('#dcard').classList.remove('flip');$('#cardFlip').setAttribute('aria-pressed','false');$('#dcard').scrollTop=0;
+  if(fresh){
+    ov.hidden=false;
+    typeof syncModal==='function'&&syncModal();/* WP2: inert behind, Tab stays inside */
+    typeof openLayer==='function'&&openLayer('card',closeCard);/* WP2: Back closes the card */
+  }
+  $('#cardClose').focus();
+}
+function closeCard(fromBack){
+  var ov=$('#overlay');if(ov.hidden)return;
+  ov.hidden=true;
+  typeof syncModal==='function'&&syncModal();
+  if(!fromBack&&typeof dropLayer==='function')dropLayer('card');/* WP2: consume its history entry */
+  focusBack(sayFocus,(sayAlts||[]).concat(['#btnHotel']));sayFocus=sayAlts=null;
+}
+/* the taxi card: where to (the drop-off point of a car-free place), its address and phone, Amap's car navigation (its taxi
+   option is one tap from there), and Walk there for the in-app route */
+function showCard(id,opener){
+  var s=BY[id];if(!s)return;
+  var t=s.taxi&&s.taxi.zh?s.taxi:null,zh=t?t.zh:s.zh,m=markers[s.id];
+  showSay({ask:'请带我去',zh:zh,en:t&&t.en?t.en:s.name,addr:s.addr,tel:s.tel,
+    noteHtml:'<span lang="zh-CN">请打表，谢谢</span> · Please use the meter',
+    primary:{label:'Taxi in Amap',href:amap(s,'car')},
+    walk:function(){closeCard();closeHelp();toggleList(false);openRoute(placeEnd(s),geoOK()?{type:'me'}:null)},
+    copy:zh+(s.addr?' '+s.addr:''),copyMsg:'Copied, paste into DiDi or Amap'},opener,[m&&m.getElement()]);
+}
+/* clipboard, with the old textarea route where the async API is missing or refused; resolves true when it worked */
+function copyText(t){
+  function legacy(){
+    try{var ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';
+      (document.querySelector('#overlay:not([hidden])')||document.body).appendChild(ta);ta.select();ta.setSelectionRange(0,t.length);
+      var ok=document.execCommand('copy');ta.remove();return ok}catch(e){return false}
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText)return navigator.clipboard.writeText(t).then(function(){return true},function(){return legacy()});
+  return Promise.resolve(legacy());
+}
+$('#cardCopy').addEventListener('click',function(){
+  var b=this,msg=sayCopyMsg;
+  copyText(sayCopy).then(function(ok){
+    $('#cardMsg').textContent=ok?msg:'Couldn’t copy here. Press and hold the Chinese text to copy it.';
+    if(ok)b.textContent='Copied';if(document.activeElement!==b&&!$('#overlay').hidden)b.focus();
+  });
+});
+$('#cardFlip').addEventListener('click',function(){var on=$('#dcard').classList.toggle('flip');this.setAttribute('aria-pressed',String(on))});
+$('#cardWalk').addEventListener('click',function(){if(sayWalk)sayWalk()});
+/* a reply the other person taps stays highlighted, so you can read its English */
+$('#cardAns').addEventListener('click',function(e){var b=e.target.closest('.an');if(!b)return;
+  [].forEach.call(this.querySelectorAll('.an'),function(x){x.setAttribute('aria-pressed',String(x===b))})});
+
+/* ---------- Help (WP7.3): Phrases, Nearby (Amap searches around you) and SOS ---------- */
+var HELP_KW=[['厕所','Toilet'],['地铁站','Metro'],['药店','Pharmacy'],['ATM','ATM'],['便利店','Convenience store'],['医院','Hospital'],['美食','Food'],['奶茶','Milk tea']];
+var HELP_TABS=['phrases','nearby','sos'],DIRZH=['北','东北','东','东南','南','西南','西','西北'];
+var helpTab='phrases',helpFocus=null,helpWait=null;
+function helpC(){return me||HOME}/* searches and distances: from you, else from your hotel */
+function amapSearch(kw,c){return 'https://uri.amap.com/search?keyword='+encodeURIComponent(kw)+'&center='+c.lng+','+c.lat+'&city=430100&view=map&callnative=1&src=changsha-night-walk'}
+function markerUrl(){return 'https://uri.amap.com/marker?position='+me.lng.toFixed(6)+','+me.lat.toFixed(6)+'&name='+encodeURIComponent('我在这里')+'&coordinate=gaode&callnative=1&src=changsha-night-walk'}
+function zhDist(m){return m<1000?Math.max(50,Math.round(m/50)*50)+'米':(m/1000).toFixed(1)+'公里'}
+/* registry places of one category (metro stations, hospitals), nearest first; a view object goes into BY so Route and Taxi card work */
+function placesOf(cat,c){
+  return Object.keys(P).filter(function(id){return P[id].cat===cat&&P[id].conf!=='low'}).map(function(id){
+    return BY[id]||(BY[id]=Object.assign({},P[id],{n:glyphOf(P[id]),opt:true,eat:true,role:'near'}));
+  }).sort(function(a,b){return dist(c,a)-dist(c,b)});
+}
+function dText(s){var d=dist(helpC(),s);return me?fmtD(d):d<15?'':fmtD(d)+' from hotel'}/* no "0 m from hotel" for the hotel itself */
+function kwChip(k,c,cls){return '<a class="chip kw'+(cls?' '+cls:'')+'" data-kw="'+esc(k[0])+'" href="'+esc(amapSearch(k[0],c))+'" target="_blank" rel="noopener"><span>'+esc(k[1])+'</span>'+(k[0]!==k[1]?'<span class="zh" lang="zh-CN">'+esc(k[0])+'</span>':'')+'</a>'}
+function hplace(s,acts,glyph){
+  return '<div class="hplace"><span class="num'+(isBase(s)?' home':' optn')+'" aria-hidden="true">'+esc(glyph||s.n)+'</span><span class="ot">'+esc(s.name)+'<small lang="zh-CN">'+esc(s.zh)+'</small></span>'+
+    '<span class="od" data-d="'+esc(s.id)+'">'+dText(s)+'</span><div class="acts">'+acts+'</div></div>';
+}
+function phraseRow(p){
+  return '<button class="opt ph" data-h="say" data-i="'+PHRASES.indexOf(p)+'"><span class="ot"><span class="pz" lang="zh-CN">'+esc(p.zh)+'</span><small>'+esc(p.en)+
+    (p.py?' · <span lang="zh-Latn-pinyin">'+esc(p.py)+'</span>':'')+'</small></span><span class="chev" aria-hidden="true">›</span></button>';
+}
+function kwNote(){return me?'Opens an Amap search around you.':'Opens an Amap search around your hotel. Start tracking to search around where you are.'}
+function whereSmall(){return !geoOK()?'Needs location, which this page can’t use':me?(watchId!=null?'A card to show, in Chinese':'From your last GPS fix'):'Starts GPS first'}
+function hospText(){return 'Find a hospital near '+(me?'you':'your hotel')}
+function helpHtml(tab){
+  var c=helpC(),h='';
+  if(tab==='phrases'){
+    var g0=null;
+    PHRASES.forEach(function(p){if(p.g!==g0){g0=p.g;h+='<h3 class="opt-group">'+esc(PGROUPS[p.g]||p.g)+'</h3>'}h+=phraseRow(p)});
+    return h+'<p class="hnote">Tap a phrase to show it large. Flip turns the card to face the person across from you.</p>';
+  }
+  if(tab==='nearby'){
+    h='<p class="hnote" id="kwNote">'+esc(kwNote())+'</p><div class="kw-grid">'+HELP_KW.map(function(k){return kwChip(k,c)}).join('')+'</div>';
+    var tr=placesOf('transport',c).slice(0,3);
+    if(tr.length)h+='<h3 class="opt-group">Metro stations</h3>'+tr.map(function(s){
+      return hplace(s,'<button class="chip" data-act="route" data-id="'+esc(s.id)+'">Route</button>'+(s.last?'<span class="badge">Last train ~'+esc(s.last)+'</span>':''))}).join('');
+    return h+'<p class="hnote">Amap opens in its app if it is installed, otherwise as a Chinese web page.</p>';
+  }
+  /* SOS */
+  h='<div class="sos-grid">'+[['110','Police','报警'],['120','Ambulance','急救'],['119','Fire','火警']].map(function(n){
+      return '<a class="btn sos" href="tel:'+n[0]+'"><b>'+n[0]+'</b><small>'+n[1]+' · <span lang="zh-CN">'+n[2]+'</span></small></a>'}).join('')+
+    '<a class="btn sos" href="tel:12367"><b>12367</b><small>English helpline</small></a></div>'+
+    '<p class="hnote">In an emergency, call first; don’t rely on this app. 110, 120 and 119 may answer only in Chinese: show someone “Where am I”. 12367, the National Immigration Administration’s helpline, answers in English, 24/7.</p>'+
+    '<div class="sos-acts"><button class="btn big-act" data-h="where" id="helpWhere"'+(geoOK()?'':' disabled')+'>Where am I<small id="whereSmall">'+esc(whereSmall())+'</small></button>'+
+    '<button class="btn big-act" data-h="share" id="helpShare"'+(geoOK()?'':' disabled')+'>Share my location<small>'+(navigator.share?'Amap link for a friend':'Copies an Amap link')+'</small></button></div>'+
+    '<p class="hmsg" id="sosMsg" role="status"></p>';
+  var er=placesOf('health',c)[0];
+  h+='<h3 class="opt-group">Hospital</h3>'+(er?hplace(er,'<button class="chip" data-act="route" data-id="'+esc(er.id)+'">Route</button><button class="chip" data-act="card" data-id="'+esc(er.id)+'">Taxi card</button>'):'')+
+    kwChip(['医院',hospText()],c,'wide');
+  h+='<h3 class="opt-group">Your hotel</h3>'+hplace(HOME,'<button class="chip" data-act="card" data-id="home">Taxi card</button><button class="chip" data-act="route" data-id="home">Route</button>'+
+    (HOME.tel?'<a class="chip" href="tel:'+esc(HOME.tel.replace(/[^\d+]/g,''))+'">Call the hotel</a>':''),'H');
+  return h+'<h3 class="opt-group">Ask for help</h3>'+PHRASES.filter(function(p){return p.g==='sos'}).map(phraseRow).join('');
+}
+function renderHelp(){
+  [].forEach.call(document.querySelectorAll('#help [role=tab]'),function(b){var on=b.getAttribute('data-tab')===helpTab;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1});
+  var body=$('#helpBody');body.innerHTML=helpHtml(helpTab);body.setAttribute('aria-labelledby','htab-'+helpTab);body.scrollTop=0;
+}
+function openHelp(opener){
+  var hp=$('#help');if(!hp.hidden)return;
+  helpFocus=opener||document.activeElement;
+  closeMenu();map.closePopup();hideToast();
+  renderHelp();hp.hidden=false;$('#btnHelp').setAttribute('aria-expanded','true');
+  typeof syncModal==='function'&&syncModal();/* WP2: needs #help in openModal() */
+  typeof openLayer==='function'&&openLayer('help',function(){closeHelp(true)});/* WP2: Back closes Help */
+  $('#helpTitle').focus();
+}
+function closeHelp(fromBack){
+  var hp=$('#help');if(hp.hidden)return;
+  hp.hidden=true;helpWait=null;$('#btnHelp').setAttribute('aria-expanded','false');
+  typeof syncModal==='function'&&syncModal();
+  if(!fromBack&&typeof dropLayer==='function')dropLayer('help');/* WP2 */
+  focusBack(helpFocus,['#btnHelp']);helpFocus=null;
+}
+function setHelpTab(t,focus){if(HELP_TABS.indexOf(t)<0)return;helpTab=t;renderHelp();if(focus)$('#htab-'+t).focus()}
+/* on every fix (from ui()) while Help is open: the searches follow you, distances update, a "Where am I" that waited for GPS opens */
+function helpLive(){
+  var c=helpC();
+  [].forEach.call(document.querySelectorAll('#help [data-kw]'),function(a){var u=amapSearch(a.getAttribute('data-kw'),c);if(a.getAttribute('href')!==u)a.href=u});
+  [].forEach.call(document.querySelectorAll('#help [data-d]'),function(e){var s=BY[e.getAttribute('data-d')];if(s){var t=dText(s);if(e.textContent!==t)e.textContent=t}});
+  var kn=$('#kwNote');if(kn&&kn.textContent!==kwNote())kn.textContent=kwNote();
+  var ws=$('#whereSmall');if(ws&&ws.textContent!==whereSmall())ws.textContent=whereSmall();
+  var hs=$('#help .kw.wide>span');if(hs&&hs.textContent!==hospText())hs.textContent=hospText();
+  var m=$('#sosMsg');
+  if(helpWait&&me){var w=helpWait;helpWait=null;if(m)m.textContent=w==='share'?'Found you. Tap Share my location again.':'';if(w==='where')whereAmI()}
+  else if(helpWait&&watchId==null){helpWait=null;if(m)m.textContent='Your location isn’t available: check that this site may use it, then try again.'}
+}
+function needFix(kind){
+  var m=$('#sosMsg');
+  if(!geoOK()){if(m)m.textContent='Your location isn’t available on this page.';return}
+  helpWait=kind;
+  if(m)m.textContent=kind==='where'?'Finding your location… The card opens as soon as it’s found.':'Finding your location… Tap Share again once it’s found.';
+  if(watchId==null)startTracking();
+}
+/* "Where am I": the nearest known place in Chinese; more than 200 m away, with the direction and distance from it */
+function whereAmI(opener){
+  if(!me){needFix('where');return}
+  var best=null,bd=1e9;
+  Object.keys(P).forEach(function(id){var p=P[id];if(p.conf==='low')return;var d=dist(me,p);if(d<bd){bd=d;best=p}});
+  if(!best)return;
+  var zh,en;
+  if(bd<=200){zh=best.zh+'附近';en='I am near '+best.name}
+  else{var i=Math.round(bearing(best,me)/45)%8;zh=best.zh+DIRZH[i]+'方向约'+zhDist(bd)+'处';en='I am about '+fmtD(bd)+' '+DIRS[i]+' of '+best.name}
+  var w=endWgs({type:'me'});
+  showSay({ask:'我在',zh:zh,en:en,primary:{label:'Show in Amap',href:markerUrl()},copy:'我在'+zh,
+    noteHtml:'GCJ-02 (Amap) '+me.lat.toFixed(5)+', '+me.lng.toFixed(5)+(w?'<br>WGS-84 (GPS) '+w[0].toFixed(5)+', '+w[1].toFixed(5):'')+
+      (watchId==null?'<br>From your last GPS fix: tracking is off.':'')},opener||$('#helpWhere'));
+}
+/* "Share my location": an Amap marker link (GCJ-02, which Amap expects) plus the GPS (WGS-84) numbers for friends abroad */
+function shareMe(){
+  if(!me){needFix('share');return}
+  var u=markerUrl(),w=endWgs({type:'me'}),text='我在这里 / I am here'+(w?'\nGPS (WGS-84): '+w[0].toFixed(5)+', '+w[1].toFixed(5):''),m=$('#sosMsg');
+  function fallback(){copyText(text+'\n'+u).then(function(ok){if(m)m.textContent=ok?'Location link copied: paste it into a message.':'Couldn’t share or copy here.'})}
+  if(navigator.share)navigator.share({title:'My location',text:text,url:u}).then(function(){if(m)m.textContent='Shared.'},function(e){if(!(e&&e.name==='AbortError'))fallback()});
+  else fallback();
+}
+$('#btnHelp').addEventListener('click',function(){openHelp(this)});
+$('#helpClose').addEventListener('click',function(){closeHelp()});
+$('#help').addEventListener('click',function(e){
+  var el=e.target.closest('[data-h]');if(!el||el.disabled)return;
+  var k=el.getAttribute('data-h');
+  if(k==='tab')setHelpTab(el.getAttribute('data-tab'));
+  else if(k==='say'){var p=PHRASES[+el.getAttribute('data-i')];if(p)showSay({zh:p.zh,py:p.py,en:p.en,answers:p.ans},el)}
+  else if(k==='where')whereAmI(el);
+  else if(k==='share')shareMe();
+});
+/* the tabs: arrow keys move between them */
+$('#help .help-tabs').addEventListener('keydown',function(e){
+  var d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(!d)return;
+  e.preventDefault();setHelpTab(HELP_TABS[(HELP_TABS.indexOf(helpTab)+d+3)%3],true);
+});
 
 document.addEventListener('click',function(e){
   if(!e.target.closest)return;
@@ -2120,23 +2417,23 @@ document.addEventListener('click',function(e){
   var st=e.target.closest('[data-step]');if(st){zoomStep(+st.getAttribute('data-step'));return}
   var el=e.target.closest('[data-act]');if(!el)return;
   var act=el.getAttribute('data-act'),id=el.getAttribute('data-id')||curNext;
-  if(act==='route'){map.closePopup();toggleList(false);openRoute(placeEnd(BY[id]),geoOK()?{type:'me'}:null);return}
+  if(act==='route'){map.closePopup();closeHelp();toggleList(false);openRoute(placeEnd(BY[id]),geoOK()?{type:'me'}:null);return}
   if(act==='dirfrom'||act==='dirto'){map.closePopup();var pin={type:'place',lat:+el.getAttribute('data-lat'),lng:+el.getAttribute('data-lng'),label:'Pinned spot'};if(act==='dirfrom')openRoute(null,pin);else openRoute(pin);return}
   if(act==='visit')toggleVisit(id);
   else if(act==='skip')skipStop(id,true);
   else if(act==='unskip')skipStop(id,false);
   else if(act==='target')setTarget(id);
   else if(act==='fly')flyTo(id);
-  else if(act==='card')showCard(id);
+  else if(act==='card')showCard(id,el);
   else if(act==='list')toggleList();
   else if(act==='filter')setFilter(el.getAttribute('data-f'));
   else if(act==='sort')toggleSort();
   else if(act==='gpx')exportGpx();
   else if(act==='more'){var row=el.closest('.row'),op=row.classList.toggle('open');el.textContent=op?'Less':'More';el.setAttribute('aria-expanded',String(op))}
 },true);
-$('#cardClose').addEventListener('click',closeCard);
+$('#cardClose').addEventListener('click',function(){closeCard()});
 $('#overlay').addEventListener('click',function(e){if(e.target===this)closeCard()});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeCard();closeMenu()}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){if(!$('#overlay').hidden)closeCard();else if(!$('#help').hidden)closeHelp();closeMenu()}});
 
 /* ---------- GPS tracking ---------- */
 function startTracking(){

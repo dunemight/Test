@@ -360,3 +360,27 @@ WP6 is implemented on top of WP5 in `index.html` (not committed). Tests: `scratc
 - **`scratchpad/tests57/wp1_on_wp57.js`** (`APP_FILE=/home/user/Test-wp57/index.html`) has 12 failures:
   - the 6 WP5 id changes already listed above;
   - the 6 "label resets to Show all stops" checks (deviation 4).
+
+---
+
+# WP7: Show-staff cards, phrases, SOS and Nearby (after the 25 Sep cuts)
+
+Built: `showSay` (taxi card with address, Copy, Flip, Walk there), the Help panel (`#help`: Phrases, Nearby, SOS), "Where am I", "Share my location". **Not built (cut):** Order card, Food needs / `S.diet`, Ask the way, Speak, Tips. No new `S` fields, no `CARRY` change, no new storage keys.
+
+## Merge points
+- **FAB column.** `#btnHelp` (文) takes the compass FAB slot. `#btnCompass` is still in the DOM but has `hidden`, so the column keeps 4 FABs and the 228 px sheet cap stays right. **WP3 merge:** once the dial `#compass` owns the toggle, delete `#btnCompass`; its click handler (`$('#btnCompass')...`) must then read the dial button instead. Until WP3 lands, this branch alone has no visible compass toggle.
+- **WP2 layer stack / inert.** `showSay`/`closeCard` and `openHelp`/`closeHelp` call `openLayer('card'|'help', …)`, `dropLayer(…)` and `syncModal()` through `typeof` guards (names as in the WP2 worktree). **WP2 merge must:**
+  - add `#help` to `openModal()` (e.g. `var o=$('#overlay');if(!o.hidden)return o;var h=$('#help');if(!h.hidden)return h;var p=$('#picker');…`) so `inert` covers the map/sheet behind Help and Tab stays inside it. The card can open above Help (phrase, hospital Taxi card, Where am I): `#overlay` must be checked first, and `#help` must not be in `MODAL_BG` while the card is up (put `#help` into the inert set only when the card opens above it, or leave it out).
+  - Keep closeCard/closeHelp's own focus restore (`focusBack`) or swap it for WP2's `restoreFocus`: same signature (el, alts).
+  - G10 (`page.goBack()` closes Help) becomes testable then; Esc already closes the card first, then Help.
+  - WP2's Escape handler: WP7 changed the keydown handler to `if(card open)closeCard(); else if(help open)closeHelp(); closeMenu()`; merge into WP2's layer-aware Esc.
+  - `.seg button[aria-selected=true]` is new CSS (Help tabs); WP2's 44 px sizing already applies to `.seg button`.
+- **say().** Copy feedback is written into the card (`#cardMsg`, `role=status`), not a toast (the toast sits under the overlay). No `say()` call is needed; if WP2 wants it, add `typeof say==='function'&&say(msg)` in the `#cardCopy` handler.
+- **ui()** calls `helpLive()` when Help is open (Nearby centres, distances, Where-am-I waiting for a fix). WP3's `onPos` changes don't affect it as long as `ui()` still runs per fix.
+- **`amap(s,mode)`**: mode defaults to `walk`; `'car'` uses `s.taxi` when present. WP3's detour chip can keep calling `amap(s)`.
+- **`copyText(t)`** (Promise<boolean>, clipboard API then textarea fallback) is reusable.
+- **Data.** Nearby lists the 3 nearest `cat:'transport'` places and SOS the nearest `cat:'health'` place, only when such entries exist (none today). `placesOf` puts view objects for them into `BY` (role `near`, `eat:true`: never auto-ticks, never in `ALL`).
+- **Row chips.** The WP6 rows already show "Taxi card" for eat/near places (no Order chip); nothing to reconcile.
+
+## Tests
+`scratchpad/resume-WP7/`: `run_all.sh` runs r0, wp1, wp5, wp6 (split), wp6x and `wp7.js` (G1, G2, G4-button, G5, G5data, G6, G9, Where am I, Phrases, invariants).
